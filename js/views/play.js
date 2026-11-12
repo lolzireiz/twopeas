@@ -1,5 +1,5 @@
 import { store } from '../store.js';
-import { WYR, DRAW_PROMPTS, WORDS } from '../content.js';
+import { WYR, WYR_CAT, WYR_CATS, DRAW_PROMPTS, WORDS } from '../content.js';
 import { GAME_NAMES, GAME_EMOJI, turnOf, scoreboard, award, wyrPicks, wyrGuesses } from '../logic.js';
 import { hunt, newBoard } from './hunt.js';
 import { header, meName, themName, nameOf, colorFor, empty } from '../ui.js';
@@ -73,8 +73,9 @@ async function createGame(type, opts = {}) {
   if (type === 'dots') data = { type, players: [me, them], turn: me, lines: {}, boxes: {}, winner: null };
   if (type === 'hunt') data = { type, board: newBoard(uid()), done: false, winner: null };
   if (type === 'wyr') {
-    const idx = seededShuffle(WYR.map((_, i) => i), uid()).slice(0, 10);
-    data = { type, qs: idx, done: false };
+    const cat = opts.cat || await askWyrCat();
+    if (!cat) return null;
+    data = { type, qs: pickWyr(cat), cat, done: false };
   }
   if (type === 'draw') {
     data = { type, drawer: me, guesser: them, choices: seededShuffle(DRAW_PROMPTS, uid()).slice(0, 3), prompt: null, phase: 'pick', strokes: [], guesses: [], turn: me, winner: null };
@@ -85,9 +86,73 @@ async function createGame(type, opts = {}) {
     data = { type, setter: me, guesser: them, word, guesses: [], turn: them, winner: null };
   }
   const g = await store.add('game', data);
-  if (type === 'wyr') store.notify('game', `${myName()} started Would you rather 🤔`, 'Pick yours, then guess theirs. How well do you know each other?', `#/game/${g.id}`);
+  if (type === 'wyr') store.notify('game', `${myName()} started Would you rather ${WYR_CATS[data.cat]?.e || '🤔'}`, `${WYR_CATS[data.cat]?.name || 'Our own questions'}: pick yours, then guess theirs`, `#/game/${g.id}`);
   if (type === 'word') store.notify('game', `${myName()} picked a secret word 🔤`, 'You get 6 tries to guess it', `#/game/${g.id}`);
   return g.id;
+}
+
+// ---- Would you rather: categories, your own questions, no repeats ----
+export function wyrQ(q) {
+  if (typeof q === 'number') return WYR[q] || ['?', '?'];
+  const it = store.get(String(q).slice(2));
+  return it ? [it.data.a, it.data.b] : ['(deleted question)', '(deleted question)'];
+}
+
+function pickWyr(cat) {
+  const customs = store.all('customwyr').map((c) => `c:${c.id}`);
+  let pool = cat === 'ours' ? customs : WYR.map((_, i) => i).filter((i) => cat === 'mix' || WYR_CAT[i] === cat);
+  if (cat === 'mix') pool = pool.concat(customs);
+  const used = new Set(store.all('game', (g) => g.data.type === 'wyr').flatMap((g) => g.data.qs));
+  const fresh = seededShuffle(pool.filter((q) => !used.has(q)), uid());
+  const old = seededShuffle(pool.filter((q) => used.has(q)), uid());
+  return fresh.concat(old).slice(0, 10);
+}
+
+function askWyrCat() {
+  return new Promise((resolve) => {
+    let done = false;
+    const customs = store.all('customwyr');
+    const used = new Set(store.all('game', (g) => g.data.type === 'wyr').flatMap((g) => g.data.qs));
+    const left = (cat) => WYR.filter((_, i) => (cat === 'mix' || WYR_CAT[i] === cat) && !used.has(i)).length;
+    const cats = Object.entries(WYR_CATS).map(([k, c]) => `<button class="idea" data-c="${k}"><span class="e">${c.e}</span><span class="grow"><b>${c.name}</b><span>${left(k)} new questions</span></span></button>`).join('');
+    sheet({
+      title: 'Would you rather…',
+      tall: true,
+      body: `<div class="idea-list">${cats}
+        ${customs.length >= 3 ? `<button class="idea" data-c="ours"><span class="e">✍️</span><span class="grow"><b>Our own questions</b><span>${customs.length} written by you two</span></span></button>` : ''}</div>
+        <div class="sp"></div><button class="btn ghost block" data-add>✍️ Write your own questions</button>`,
+      onMount: (el, close) => {
+        el.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => { done = true; close(); resolve(b.dataset.c); }; });
+        el.querySelector('[data-add]').onclick = () => { done = true; close(); resolve(null); setTimeout(addWyrSheet, 300); };
+      },
+      onClose: () => { if (!done) resolve(null); },
+    });
+  });
+}
+
+function addWyrSheet() {
+  sheet({
+    title: 'Write your own',
+    body: `<p class="small muted center">They show up in "Mix of everything" and in your own category (once you have 3).</p>
+      <label class="field">Would you rather…</label><input type="text" data-a maxlength="80" placeholder="Live in a castle">
+      <div class="wyr-or" style="margin:8px 0">or</div>
+      <input type="text" data-b maxlength="80" placeholder="Live on a boat">
+      <div class="sp"></div><button class="btn block" data-save>Add question</button>
+      <div class="sp"></div><div class="small muted center">${store.all('customwyr').length} added so far</div>`,
+    onMount: (el, close) => {
+      el.querySelector('[data-save]').onclick = async () => {
+        const a = el.querySelector('[data-a]').value.trim();
+        const b = el.querySelector('[data-b]').value.trim();
+        if (!a || !b) { toast('Fill in both sides'); return; }
+        await store.add('customwyr', { a, b });
+        el.querySelector('[data-a]').value = '';
+        el.querySelector('[data-b]').value = '';
+        el.querySelector('[data-a]').focus();
+        el.querySelector('.small.muted.center:last-child').textContent = `${store.all('customwyr').length} added so far`;
+        toast('Added! Write another or close');
+      };
+    },
+  });
 }
 
 function askWord() {
@@ -151,7 +216,8 @@ const rematchBtn = (g) => (isDone(g) ? `<div class="sp"></div><button class="btn
 
 async function rematch(g) {
   let id;
-  if (g.data.type === 'word') id = await createGame('word');
+  if (g.data.type === 'wyr') id = await createGame('wyr', { cat: g.data.cat || 'mix' });
+  else if (g.data.type === 'word') id = await createGame('word');
   else id = await createGame(g.data.type);
   if (id) location.hash = `#/game/${id}`;
 }
@@ -363,7 +429,7 @@ function wyr(g) {
   let html;
   if (myG.length < total) {
     const guessing = mine.length > myG.length;
-    const q = WYR[d.qs[myG.length]];
+    const q = wyrQ(d.qs[myG.length]);
     html = `<div class="wyr-q">Question ${myG.length + 1} of ${total} · ${themName()} is on ${Math.min(total, theirG.length + 1)}/${total}</div>
       <div class="turn-banner ${guessing ? '' : 'mine'}">${guessing ? `🔮 Now guess: what will <b>${themName()}</b> pick?` : 'Would <b>you</b> rather…'}</div>
       <div class="wyr-opts">
@@ -374,7 +440,7 @@ function wyr(g) {
       ${guessing ? `<p class="center small muted" style="margin-top:12px">You picked: ${esc(q[mine[myG.length]])}</p>` : ''}`;
   } else if (theirG.length < total) {
     html = `<div class="turn-banner">You're done! Waiting for ${themName()} (${theirG.length}/${total})</div>
-      <div class="card">${d.qs.map((qi, i) => `<div class="wyr-res"><div><b>${esc(WYR[qi][mine[i]])}</b><div class="guess-tag">You think ${themName()} picks: ${esc(WYR[qi][myG[i]])}</div></div><span class="pill me">you</span></div>`).join('')}</div>`;
+      <div class="card">${d.qs.map((qi, i) => `<div class="wyr-res"><div><b>${esc(wyrQ(qi)[mine[i]])}</b><div class="guess-tag">You think ${themName()} picks: ${esc(wyrQ(qi)[myG[i]])}</div></div><span class="pill me">you</span></div>`).join('')}</div>`;
   } else {
     const m = wyrMatches(g);
     const iKnow = myG.filter((x, i) => x === theirs[i]).length;
@@ -386,8 +452,8 @@ function wyr(g) {
         <div><b style="color:var(--them)">${theyKnow}/${total}</b><span class="who">${themName()} guessed right</span></div></div></div>
       <div class="card">${d.qs.map((qi, i) => {
         const same = mine[i] === theirs[i];
-        return `<div class="wyr-res"><div><b>${esc(WYR[qi][mine[i]])}</b>${same ? '' : `<div class="small muted">${themName()}: ${esc(WYR[qi][theirs[i]])}</div>`}
-          <div class="guess-tag">${myG[i] === theirs[i] ? '✓ You called it' : `✗ You guessed ${esc(WYR[qi][myG[i]])}`}</div></div><span>${same ? '💚' : '↔️'}</span></div>`;
+        return `<div class="wyr-res"><div><b>${esc(wyrQ(qi)[mine[i]])}</b>${same ? '' : `<div class="small muted">${themName()}: ${esc(wyrQ(qi)[theirs[i]])}</div>`}
+          <div class="guess-tag">${myG[i] === theirs[i] ? '✓ You called it' : `✗ You guessed ${esc(wyrQ(qi)[myG[i]])}`}</div></div><span>${same ? '💚' : '↔️'}</span></div>`;
       }).join('')}</div>${rematchBtn(g)}`;
   }
   return {
