@@ -494,3 +494,14 @@ label.field { display: block; font-weight: 800; font-size: 14px; margin: 14px 0 
 .cam-bar { position: absolute; left: 0; right: 0; bottom: calc(var(--safe-bottom) + 28px); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; justify-items: center; }
 .cam-shoot { width: 76px; height: 76px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 5px rgba(255,255,255,.4); }
 .cam-shoot:active { transform: scale(.92); }
+.hint-box { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 12px; margin-bottom: 12px; text-align: center; }
+.clue { margin-top: 8px; font-size: 14px; }
+.blanks { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; margin-top: 10px; }
+.blanks span { width: 24px; height: 32px; border-bottom: 3px solid #d9cdbf; font-size: 20px; font-weight: 900; text-transform: uppercase; display: grid; place-items: center; }
+.blanks span.got { border-color: var(--me); color: var(--ink); animation: pop .3s; }
+.blanks span.gap { width: 12px; border: 0; }
+.guess-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.guess-chips span { padding: 5px 11px; border-radius: 99px; background: var(--soft); font-weight: 800; font-size: 13px; text-decoration: line-through; color: var(--muted); }
+.guess-chips span.warm { background: #fde9da; color: #c4602a; text-decoration: none; }
+.guess-chips span.warm::after { content: ' 🔥'; }
+.guess-chips span.ok { background: #d9efcf; color: #3f8a2f; text-decoration: none; }

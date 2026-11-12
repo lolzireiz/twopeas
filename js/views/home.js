@@ -266,9 +266,21 @@ export function home() {
   };
 }
 
+// Taps are sweet, not spam: the same one once every 3 minutes, any tap every 20 seconds.
+const TAP_SAME = 3 * 60e3;
+const TAP_ANY = 20e3;
 export async function sendTap(type, el) {
   const tap = TAPS.find((t) => t.id === type);
   if (!tap) return;
+  const mine = store.all('tap', (t) => t.by === store.me);
+  const last = mine[mine.length - 1];
+  const lastSame = mine.filter((t) => t.data.type === type).pop();
+  if (lastSame && Date.now() - lastSame.at < TAP_SAME) {
+    const m = Math.ceil((TAP_SAME - (Date.now() - lastSame.at)) / 60e3);
+    toast(`${tap.e} Already sent! ${themName()} got it 💚 You can send another in ${m} min`);
+    return;
+  }
+  if (last && Date.now() - last.at < TAP_ANY) { toast(`Easy, tiger 😄 ${themName()} just got one from you`); return; }
   const r = el?.getBoundingClientRect?.();
   if (r) floatHearts(r.left + r.width / 2, r.top, 5);
   await store.add('tap', { type, to: store.partnerId });

@@ -1,5 +1,5 @@
 import { store } from '../store.js';
-import { WYR, WYR_CAT, WYR_CATS, DRAW_PROMPTS, WORDS } from '../content.js';
+import { WYR, WYR_CAT, WYR_CATS, DRAW_PROMPTS, WORDS, drawKind } from '../content.js';
 import { GAME_NAMES, GAME_EMOJI, turnOf, scoreboard, award, wyrPicks, wyrGuesses } from '../logic.js';
 import { hunt, newBoard } from './hunt.js';
 import { header, meName, themName, nameOf, colorFor, empty } from '../ui.js';
@@ -508,7 +508,7 @@ function draw(g) {
     return {
       html: `<div class="turn-banner mine">Pick something to draw</div>
         <div class="stack">${d.choices.map((c) => `<button class="wyr-opt" style="width:100%" data-act="choose" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>
-        <p class="center small muted" style="margin-top:12px">${themName()} gets 3 guesses after watching you draw it.</p>`,
+        <p class="center small muted" style="margin-top:12px">${themName()} gets 5 guesses, with letter hints, after watching you draw it.</p>`,
       actions: { choose: async (x) => { await store.update(g.id, { prompt: x.c, phase: 'drawing' }); return true; } },
     };
   }
@@ -522,6 +522,7 @@ function draw(g) {
       html: `<div class="turn-banner mine">Draw: <b>${esc(d.prompt)}</b></div>
         <div class="canvas-wrap" id="cv"></div>
         ${paletteHTML(pen.color, pen.size)}
+        <input type="text" data-input="clue" maxlength="40" placeholder="Optional clue for ${themName()} (no giving it away!)" style="margin-bottom:10px">
         <div class="row gap"><button class="btn ghost grow" data-act="undo">Undo</button><button class="btn grow" data-act="send">Send to ${themName()}</button></div>`,
       mount: (root) => {
         ctl = makeCanvas(root.querySelector('#cv'), { strokes: () => strokes, color: pen.color, size: pen.size, onStroke: (s) => strokes.push(s) });
@@ -534,7 +535,9 @@ function draw(g) {
         undo: () => { strokes.pop(); ctl.redraw(); },
         send: async () => {
           if (!strokes.length) { toast('Draw something first!'); return; }
-          await store.update(g.id, { strokes: strokes.slice(), phase: 'guessing', turn: d.guesser });
+          const clue = (document.querySelector('[data-input="clue"]')?.value || '').trim();
+          if (clue && norm(clue).includes(norm(d.prompt))) { toast("That clue gives it away! Try something sneakier 😏"); return; }
+          await store.update(g.id, { strokes: strokes.slice(), phase: 'guessing', turn: d.guesser, clue, revealed: [] });
           delete drafts[g.id];
           store.notify('game', `${myName()} drew something for you 🎨`, 'Watch it and take a guess', `#/game/${g.id}`);
           return true;
@@ -546,26 +549,49 @@ function draw(g) {
 
   // Guessing or finished
   let ctl;
+  const MAX = 5;
+  const left = MAX - d.guesses.length;
+  const revealed = new Set(d.revealed || []);
+  const letters = [...d.prompt];
+  const hidden = letters.map((ch, i) => (ch !== ' ' && !revealed.has(i) ? i : -1)).filter((i) => i >= 0);
+  const blanks = letters.map((ch, i) => (ch === ' ' ? '<span class="gap"></span>' : `<span class="${revealed.has(i) || done || drawer ? 'got' : ''}">${revealed.has(i) || done || drawer ? esc(ch) : ''}</span>`)).join('');
+  const words = d.prompt.split(' ');
+  const hintBox = `<div class="hint-box">
+      <div class="row gap wrap" style="justify-content:center"><span class="pill">🏷️ ${drawKind(d.prompt)}</span><span class="pill">${words.length > 1 ? `${words.length} words, ` : ''}${d.prompt.replace(/ /g, '').length} letters</span></div>
+      ${d.clue ? `<div class="clue">💬 ${drawer ? 'Your clue' : `${themName()}'s clue`}: <b>${esc(d.clue)}</b></div>` : ''}
+      <div class="blanks">${blanks}</div>
+    </div>`;
+  const guessList = d.guesses.length ? `<div class="guess-chips">${d.guesses.map((x) => `<span class="${close(norm(x), norm(d.prompt)) || norm(x).includes(norm(d.prompt)) ? 'ok' : nearly(x, d.prompt) ? 'warm' : ''}">${esc(x)}</span>`).join('')}</div>` : '';
   const guessForm = !done && !drawer ? `
     <form data-form="guess" class="add-row"><input type="text" name="guess" placeholder="What is it?" autocomplete="off" autocapitalize="none" required><button class="btn">Guess</button></form>
-    <p class="small muted center" style="margin-top:8px">${3 - d.guesses.length} guess${3 - d.guesses.length === 1 ? '' : 'es'} left</p>` : '';
-  const top = done ? `<div class="turn-banner mine">${d.winner === 'team' ? `${drawer ? themName() : 'You'} guessed it: <b>${esc(d.prompt)}</b> 🎉` : `It was <b>${esc(d.prompt)}</b>`}</div>`
+    <div class="row between" style="margin-top:8px"><span class="small muted bold">${left} guess${left === 1 ? '' : 'es'} left · a wrong guess reveals a letter</span>
+    ${hidden.length > 1 ? '<button class="link" data-act="hint">💡 Reveal a letter</button>' : ''}</div>` : '';
+  const top = done ? `<div class="turn-banner mine">${d.winner === 'team' ? `${drawer ? themName() : 'You'} guessed it: <b>${esc(d.prompt)}</b> 🎉 ${'⭐'.repeat(Math.max(1, 3 - Math.floor(((d.revealed || []).length + d.guesses.length - 1) / 2)))}` : `It was <b>${esc(d.prompt)}</b>`}</div>`
     : drawer ? `<div class="turn-banner">${themName()} is guessing your <b>${esc(d.prompt)}</b>…</div>` : '<div class="turn-banner mine">What did they draw?</div>';
   return {
     live: false,
     html: `${top}
+      ${hintBox}
       <div class="canvas-wrap" id="cv"></div>
-      <div class="row between" style="margin:10px 0"><button class="link" data-act="replay">▶︎ Replay</button>${d.guesses.length ? `<span class="small muted">Guesses: ${d.guesses.map(esc).join(', ')}</span>` : ''}</div>
+      <div class="row between" style="margin:10px 0"><button class="link" data-act="replay">▶︎ Replay</button><button class="link" data-act="full">Show whole drawing</button></div>
+      ${guessList}
       ${guessForm}
-      ${done ? `<button class="btn block" data-act="again">Play again (${drawer ? themName() : 'you'} draw${drawer ? 's' : ''})</button>` : ''}`,
+      ${done ? `<div class="sp"></div><button class="btn block" data-act="again">Play again (${drawer ? themName() : 'you'} draw${drawer ? 's' : ''})</button>` : ''}`,
     mount: (root) => {
       ctl = makeCanvas(root.querySelector('#cv'), { strokes: () => d.strokes, readOnly: true });
-      if (!done && !drawer) setTimeout(() => ctl.replay(d.strokes), 300);
+      if (!done && !drawer && !d.guesses.length) setTimeout(() => ctl.replay(d.strokes), 300);
       return () => ctl.destroy();
     },
     onChange: (ch) => ch.item?.id === g.id || ch.type === 'reload',
     actions: {
       replay: () => ctl.replay(d.strokes, 4000),
+      full: () => ctl.redraw(),
+      hint: async () => {
+        if (hidden.length <= 1) return;
+        const i = hidden[Math.floor(Math.random() * hidden.length)];
+        await store.update(g.id, { revealed: [...revealed, i] });
+        return true;
+      },
       again: async () => {
         const id = await createDrawGame(drawer ? store.partnerId : store.me);
         if (id) location.hash = `#/game/${id}`;
@@ -577,13 +603,28 @@ function draw(g) {
         if (!gs) return;
         const guesses = [...d.guesses, gs];
         const right = close(norm(gs), norm(d.prompt)) || norm(gs).includes(norm(d.prompt));
-        const winner = right ? 'team' : guesses.length >= 3 ? 'none' : null;
-        await commit(g, { ...d, guesses, winner, turn: winner ? null : d.guesser });
-        if (!right) toast(guesses.length >= 3 ? `It was "${esc(d.prompt)}"!` : 'Nope! Try again');
+        const winner = right ? 'team' : guesses.length >= MAX ? 'none' : null;
+        let rev = [...revealed];
+        if (!right && hidden.length > 1) rev = [...rev, hidden[Math.floor(Math.random() * hidden.length)]];
+        await commit(g, { ...d, guesses, revealed: rev, winner, turn: winner ? null : d.guesser });
+        if (!right) toast(guesses.length >= MAX ? `It was "${esc(d.prompt)}"!` : nearly(gs, d.prompt) ? '🔥 So close! Here\'s another letter' : 'Nope! Here\'s a letter to help');
         return true;
       },
     },
   };
+}
+
+// "Warm" guesses: off by a couple of letters, or sharing a word.
+function nearly(a, b) {
+  const x = norm(a);
+  const y = norm(b);
+  if (!x) return false;
+  if (y.includes(x) && x.length >= 3) return true;
+  if (b.split(' ').some((w) => w.length >= 3 && a.toLowerCase().includes(w))) return true;
+  const dp = Array.from({ length: x.length + 1 }, (_, i) => [i, ...Array(y.length).fill(0)]);
+  for (let j = 1; j <= y.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= x.length; i++) for (let j = 1; j <= y.length; j++) dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1));
+  return dp[x.length][y.length] <= 2;
 }
 
 async function createDrawGame(drawer) {

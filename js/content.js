@@ -776,3 +776,18 @@ export const WYR_CAT = WYR.map((_, i) => MIX_CATS[i] || 'silly');
 for (const [cat, list] of Object.entries(MORE)) {
   for (const q of list) { WYR.push(q); WYR_CAT.push(cat); }
 }
+
+// What kind of thing each Draw & Guess prompt is (shown as a hint).
+const DRAW_KIND = {
+  animal: 'cat penguin fish turtle octopus snail whale frog bee owl bunny butterfly dinosaur spider dog raccoon capybara unicorn dragon',
+  food: 'pizza cupcake ice cream banana mushroom donut pineapple coffee sandwich apple cherry carrot peas',
+  place: 'beach castle tree house volcano lighthouse house island mountain bridge',
+  nature: 'rainbow sun moon cloud flower cactus snowflake star',
+  'thing you can ride': 'rocket bicycle airplane car train hot air balloon',
+};
+export function drawKind(prompt) {
+  for (const [k, list] of Object.entries(DRAW_KIND)) {
+    if (` ${list} `.includes(` ${prompt} `) || (prompt.includes(' ') && list.includes(prompt))) return k;
+  }
+  return 'object';
+}

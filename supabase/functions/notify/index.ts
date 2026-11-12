@@ -41,6 +41,12 @@ Deno.serve(async (req) => {
     const { data: mems } = await db.from('members').select('user_id').eq('couple_id', me.couple_id);
     const partner = (mems ?? []).find((m) => m.user_id !== user.id)?.user_id;
     if (!partner) return json({ ok: true, skipped: 'no partner yet' });
+    // Never more than one tap buzz per 30 seconds, even if someone spams the button.
+    if (body.type === 'tap') {
+      const slot = Math.floor(Date.now() / 30000);
+      const { data: fresh } = await db.from('sent_log').upsert({ key: `${me.couple_id}:tap:${user.id}:${slot}` }, { onConflict: 'key', ignoreDuplicates: true }).select();
+      if (!fresh?.length) return json({ ok: true, skipped: 'tap cooldown' });
+    }
     const sent = await sendTo(me.couple_id, partner, {
       type: clip(body.type || 'note', 20), title: clip(body.title, 120), body: clip(body.body, 240), url: clip(body.url || '#/home', 200),
     });
