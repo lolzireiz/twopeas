@@ -1,6 +1,6 @@
 import { store } from '../store.js';
 import { COLORS, DECKS } from '../content.js';
-import { APP_VERSION, WHATS_NEW, CONFIG } from '../config.js';
+import { APP_VERSION, APP_BUILD, WHATS_NEW, CONFIG } from '../config.js';
 import { header, themName, toggle } from '../ui.js';
 import { esc, toast, confirmSheet, dayKey, isStandalone } from '../util.js';
 import { enablePush, pushSupported } from '../push.js';
@@ -75,7 +75,7 @@ export function view() {
 
       <div class="card">
         <h2>About</h2>
-        <div class="row between"><span class="bold">Two Peas</span><span class="pill">v${APP_VERSION}</span></div>
+        <div class="row between"><span class="bold">Two Peas</span><span class="pill">v${APP_VERSION} · ${APP_BUILD}</span></div>
         ${WHATS_NEW.map((w) => `<div style="margin-top:10px"><b class="small">v${w.v}</b> <span class="tiny muted">${w.date}</span><ul class="small muted" style="margin:4px 0 0;padding-left:18px">${w.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`).join('')}
         <div class="sp"></div>
         <button class="btn ghost block" data-act="update">Check for updates</button>
@@ -89,10 +89,7 @@ export function view() {
       color: async (d) => { await store.update(`profile-${store.me}`, { color: d.c }); return true; },
       push: async () => { await enablePush(); return true; },
       export: () => exportBackup(),
-      update: async () => {
-        try { const r = await navigator.serviceWorker?.getRegistration(); await r?.update(); } catch { /* ignore */ }
-        location.reload();
-      },
+      update: async () => { const { applyUpdate } = await import('../updater.js'); applyUpdate(); },
       switch: () => store.backend.switchUser(),
       reset: async () => { if (await confirmSheet('Reset the demo?', 'This erases everything in demo mode on this phone.', 'Reset')) store.backend.reset(); },
       signout: async () => { if (await confirmSheet('Sign out?', 'You can sign back in any time.', 'Sign out')) store.backend.signOut(); },

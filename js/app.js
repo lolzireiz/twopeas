@@ -7,6 +7,7 @@ import { TAPS, MOODS } from './content.js';
 import { needsOnboarding, onboarding } from './views/onboarding.js';
 import { refreshPush } from './push.js';
 import { bus } from './bus.js';
+import { startUpdater } from './updater.js';
 import * as home from './views/home.js';
 import * as play from './views/play.js';
 import * as us from './views/us.js';
@@ -288,6 +289,7 @@ async function boot() {
   render();
   whatsNew();
   refreshPush();
+  startUpdater();
   setInterval(() => { if (store.state === 'ready' && store.couple.pet) ensureDailyQuestion().catch(() => {}); }, 60_000);
 }
 

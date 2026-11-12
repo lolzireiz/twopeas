@@ -7,6 +7,7 @@ export const CONFIG = {
 };
 
 export const APP_VERSION = '1.1.0';
+export const APP_BUILD = '20261112195811';
 
 export const WHATS_NEW = [
   {
