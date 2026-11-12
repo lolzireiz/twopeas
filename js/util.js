@@ -182,7 +182,7 @@ export function floatHearts(x, y, n = 5) {
 }
 
 // Shrink a photo before saving: max edge px, JPEG quality.
-export async function compressImage(file, max = 1280, quality = 0.78) {
+export async function compressImage(file, max = 1280, quality = 0.78, flip = false) {
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise((res, rej) => {
@@ -195,7 +195,9 @@ export async function compressImage(file, max = 1280, quality = 0.78) {
     const c = document.createElement('canvas');
     c.width = Math.round(img.width * scale);
     c.height = Math.round(img.height * scale);
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const ctx = c.getContext('2d');
+    if (flip) { ctx.translate(c.width, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(img, 0, 0, c.width, c.height);
     const blob = await new Promise((res) => c.toBlob(res, 'image/jpeg', quality));
     const dataUrl = c.toDataURL('image/jpeg', quality);
     return { blob, dataUrl };
