@@ -1,13 +1,13 @@
 // Fill these in tonight after creating the Supabase project.
 // While SUPABASE_URL is empty, the app runs in demo mode (both of you on one phone).
 export const CONFIG = {
-  SUPABASE_URL: '',
-  SUPABASE_ANON_KEY: '',
-  VAPID_PUBLIC_KEY: '',
+  SUPABASE_URL: 'https://dycsdomqlbzkzoygidwk.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3Nkb21xbGJ6a3pveWdpZHdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ1MTM1ODYsImV4cCI6MjExMDA4OTU4Nn0.NU9mDWjvdlLW173KEBpW03g9lrgF4M_XCz17mBsMdNU',
+  VAPID_PUBLIC_KEY: 'BGBDmmWpcwW-HQIahVOtkNfulGaJpOdCkZXJy_0IYAlZEaJm-J3JX_Dgf-gjiT7Agys6g8bLhbtJFVBmGoYpq-c',
 };
 
 export const APP_VERSION = '1.1.0';
-export const APP_BUILD = '20261112195811';
+export const APP_BUILD = '20261112202917';
 
 export const WHATS_NEW = [
   {
