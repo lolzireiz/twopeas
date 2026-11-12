@@ -6,10 +6,11 @@ export const CONFIG = {
   VAPID_PUBLIC_KEY: 'BGBDmmWpcwW-HQIahVOtkNfulGaJpOdCkZXJy_0IYAlZEaJm-J3JX_Dgf-gjiT7Agys6g8bLhbtJFVBmGoYpq-c',
 };
 
-export const APP_VERSION = '1.3.4';
-export const APP_BUILD = '20261112232324';
+export const APP_VERSION = '1.3.5';
+export const APP_BUILD = '20261112232525';
 
 export const WHATS_NEW = [
+  { v: '1.3.5', date: '2026-11-12', notes: ["Daily snap has its own camera: your selfie comes out exactly like the preview, no more flipping"] },
   { v: '1.3.4', date: '2026-11-12', notes: ['Daily snap: preview your photo first and tap ↔️ Flip if it is mirrored (it remembers your choice)', 'You can also flip a snap after sending it'] },
   { v: '1.3.3', date: '2026-11-12', notes: ["If the service behind Two Peas has an outage, the app now says so (instead of looking broken) and reopens by itself when it's fixed"] },
   { v: '1.3.2', date: '2026-11-12', notes: ['Fixed: getting stuck on "Load failed" after being signed out', 'Faster, more reliable startup'] },

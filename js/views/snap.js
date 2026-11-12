@@ -4,6 +4,7 @@ import { award, today } from '../logic.js';
 import { header, themName, meName, photoImg, empty, presencePill } from '../ui.js';
 import { esc, fmtDay, toast, confetti, compressImage, lsGet, lsSet, addDays } from '../util.js';
 import { bus } from '../bus.js';
+import { openCamera } from '../camera.js';
 
 export const snapId = (d, who) => `snap-${d}-${who}`;
 const myName = () => store.mine.name || 'Your person';
@@ -55,14 +56,15 @@ export function snap() {
       <div class="sp"></div>
       <input type="text" data-input="snapCap" maxlength="80" placeholder="Add a caption (optional)">
       <div class="sp"></div>
-      <div class="row gap"><button class="btn ghost grow" data-act="flip">↔️ Flip</button><label class="btn ghost grow" style="position:relative">🔁 Retake<input type="file" accept="image/*" data-change="snapPhoto" style="position:absolute;inset:0;opacity:0"></label></div>
+      <div class="row gap"><button class="btn ghost grow" data-act="flip">↔️ Flip</button><button class="btn ghost grow" data-act="camera">🔁 Retake</button></div>
       <div class="sp"></div><button class="btn block" data-act="sendSnap">Send to ${themName()} 📷</button>`;
   } else if (!mine) {
     body = `<div class="card center">
       <div style="font-size:46px">📷</div><h2>Today's snap</h2>
       <p class="muted">${theirs ? `<b>${themName()} already sent theirs.</b> Send yours to see it!` : `Send one photo today. ${themName()}'s unlocks once you've both sent one.`}</p>
       <div class="sp"></div><div class="pill">💡 Idea: ${prompt}</div><div class="sp2"></div>
-      <label class="btn block" style="position:relative">📸 Take or pick a photo<input type="file" accept="image/*" data-change="snapPhoto" style="position:absolute;inset:0;opacity:0"></label>
+      <button class="btn block" data-act="camera">📸 Open camera</button><div class="sp"></div>
+      <label class="btn ghost block" style="position:relative">🖼️ Choose a photo<input type="file" accept="image/*" data-change="snapPhoto" style="position:absolute;inset:0;opacity:0"></label>
     </div>`;
   } else if (!theirs) {
     body = `${pic(mine, 'You', 'me')}<div class="sp"></div><button class="btn ghost block" data-act="flipMine">↔️ Flip my photo</button>
@@ -85,7 +87,14 @@ export function snap() {
           ${p.theirs && p.mine ? photoImg(p.theirs.data.photo) : p.theirs ? '<div class="snap-miss">🔒</div>' : '<div class="snap-miss">—</div>'}
         </div></div>`).join('')}</div>` : ''}`,
     actions: {
-      flip: () => { pending.flip = !pending.flip; lsSet(FLIP_KEY, pending.flip); return true; },
+      flip: () => { pending.flip = !pending.flip; if (!pending.cam) lsSet(FLIP_KEY, pending.flip); return true; },
+      camera: async () => {
+        const blob = await openCamera();
+        if (!blob) return;
+        if (pending) URL.revokeObjectURL(pending.url);
+        pending = { file: blob, url: URL.createObjectURL(blob), flip: false, cam: true };
+        return true;
+      },
       sendSnap: async (x, el) => {
         el.disabled = true;
         el.textContent = 'Sending…';
