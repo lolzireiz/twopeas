@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#fffaf3"/>
+      <stop offset="1" stop-color="#fbe9d6"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <g transform="translate(512 250) scale(1.3)">
+    <path d="M0 40 C-14 -40 -150 -48 -150 60 C-150 140 -50 196 0 250 C50 196 150 140 150 60 C150 -48 14 -40 0 40Z" transform="scale(.62)" fill="#ee8fa6"/>
+    <ellipse cx="-38" cy="-2" rx="18" ry="10" fill="#fff" opacity=".5" transform="rotate(-30 -38 -2)"/>
+  </g>
+  <g transform="translate(530 640) scale(1.12)">
+    <path d="M-370 -40 Q0 330 370 -40 Q0 -170 -370 -40Z" fill="#5f9f44"/>
+    <path d="M-334 -36 Q0 250 334 -36 Q0 -116 -334 -36Z" fill="#d7efc8"/>
+    <circle cx="-118" cy="0" r="124" fill="#93d06e"/>
+    <circle cx="118" cy="0" r="124" fill="#93d06e"/>
+    <ellipse cx="-160" cy="-58" rx="34" ry="18" fill="#fff" opacity=".35" transform="rotate(-30 -160 -58)"/>
+    <ellipse cx="76" cy="-58" rx="34" ry="18" fill="#fff" opacity=".35" transform="rotate(-30 76 -58)"/>
+    <circle cx="-156" cy="-6" r="17" fill="#3b3330"/><circle cx="-80" cy="-6" r="17" fill="#3b3330"/>
+    <circle cx="-150" cy="-12" r="6" fill="#fff"/><circle cx="-74" cy="-12" r="6" fill="#fff"/>
+    <path d="M-146 42 Q-118 70 -90 42" stroke="#3b3330" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <circle cx="80" cy="-6" r="17" fill="#3b3330"/><circle cx="156" cy="-6" r="17" fill="#3b3330"/>
+    <circle cx="86" cy="-12" r="6" fill="#fff"/><circle cx="162" cy="-12" r="6" fill="#fff"/>
+    <path d="M90 42 Q118 70 146 42" stroke="#3b3330" stroke-width="13" fill="none" stroke-linecap="round"/>
+    <ellipse cx="-188" cy="34" rx="26" ry="14" fill="#ff8fa6" opacity=".6"/><ellipse cx="-48" cy="34" rx="26" ry="14" fill="#ff8fa6" opacity=".6"/>
+    <ellipse cx="48" cy="34" rx="26" ry="14" fill="#ff8fa6" opacity=".6"/><ellipse cx="188" cy="34" rx="26" ry="14" fill="#ff8fa6" opacity=".6"/>
+    <path d="M-370 -40 Q-410 -64 -420 -112" stroke="#5f9f44" stroke-width="26" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>
