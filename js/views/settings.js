@@ -4,6 +4,7 @@ import { APP_VERSION, APP_BUILD, WHATS_NEW, CONFIG } from '../config.js';
 import { header, themName, toggle } from '../ui.js';
 import { esc, toast, confirmSheet, dayKey, isStandalone } from '../util.js';
 import { enablePush, pushSupported } from '../push.js';
+import { markBackedUp, lastBackupText } from '../backup.js';
 
 const NOTIF_TYPES = [
   ['tap', 'Thinking-of-you taps'],
@@ -68,7 +69,7 @@ export function view() {
 
       <div class="card">
         <h2>Backup</h2>
-        <p class="small muted">Save a backup file to iCloud Drive (pick "Save to Files", then iCloud Drive).${store.mode === 'live' ? ' Photos stay safe in your cloud storage.' : ''}</p>
+        <p class="small muted">Last backup on this phone: <b>${lastBackupText()}</b>. Save a backup file to iCloud Drive (pick "Save to Files", then iCloud Drive).${store.mode === 'live' ? ' Photos stay safe in your cloud storage.' : ''}</p>
         <div class="sp"></div>
         <div class="row gap"><button class="btn ghost grow" data-act="export">Export backup</button><label class="btn ghost grow" style="position:relative">Restore<input type="file" accept="application/json,.json" data-change="import" style="position:absolute;inset:0;opacity:0"></label></div>
       </div>
@@ -117,19 +118,21 @@ async function savePrefs(fn) {
   await store.update(`profile-${store.me}`, { prefs });
 }
 
-async function exportBackup() {
+export async function exportBackup() {
   const items = [...store.items.values()].filter((i) => store.visible(i));
   const json = JSON.stringify({ app: 'two-peas', version: APP_VERSION, exported: new Date().toISOString(), mode: store.mode, me: store.me, partner: store.partnerId, items }, null, 1);
   const name = `two-peas-backup-${dayKey()}.json`;
   const file = new File([json], name, { type: 'application/json' });
   try {
-    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'Two Peas backup' }); return; }
-  } catch (e) { if (e.name === 'AbortError') return; }
+    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'Two Peas backup' }); markBackedUp(); return true; }
+  } catch (e) { if (e.name === 'AbortError') return false; }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(file);
   a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  markBackedUp();
+  return true;
 }
 
 async function importBackup(file) {

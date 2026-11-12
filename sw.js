@@ -3,7 +3,7 @@ const CACHE = 'twopeas-1.1.0';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.js', './js/config.js', './js/store.js', './js/logic.js', './js/content.js', './js/util.js', './js/ui.js',
-  './js/pet.js', './js/canvas.js', './js/push.js', './js/bus.js', './js/updater.js', './js/feed.js', './js/stickers.js', './js/views/hunt.js', './js/views/extras.js', './data/words.txt',
+  './js/pet.js', './js/canvas.js', './js/push.js', './js/bus.js', './js/updater.js', './js/backup.js', './js/feed.js', './js/stickers.js', './js/views/hunt.js', './js/views/extras.js', './data/words.txt',
   './js/views/home.js', './js/views/play.js', './js/views/us.js', './js/views/notes.js', './js/views/petview.js',
   './js/views/settings.js', './js/views/onboarding.js',
   './icons/icon-192.png', './icons/apple-touch-icon.png',

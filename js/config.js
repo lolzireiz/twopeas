@@ -6,10 +6,11 @@ export const CONFIG = {
   VAPID_PUBLIC_KEY: 'BGBDmmWpcwW-HQIahVOtkNfulGaJpOdCkZXJy_0IYAlZEaJm-J3JX_Dgf-gjiT7Agys6g8bLhbtJFVBmGoYpq-c',
 };
 
-export const APP_VERSION = '1.1.0';
-export const APP_BUILD = '20261112202917';
+export const APP_VERSION = '1.2.0';
+export const APP_BUILD = '20261112204502';
 
 export const WHATS_NEW = [
+  { v: '1.2.0', date: '2026-11-12', notes: ['Two Peas is live for both of you! 💚', 'Update banner when there is a new version', 'Monthly reminder to back up to iCloud Drive'] },
   {
     v: '1.1.0',
     date: '2026-11-12',
