@@ -6,10 +6,11 @@ export const CONFIG = {
   VAPID_PUBLIC_KEY: 'BGBDmmWpcwW-HQIahVOtkNfulGaJpOdCkZXJy_0IYAlZEaJm-J3JX_Dgf-gjiT7Agys6g8bLhbtJFVBmGoYpq-c',
 };
 
-export const APP_VERSION = '1.3.1';
-export const APP_BUILD = '20261112222815';
+export const APP_VERSION = '1.3.2';
+export const APP_BUILD = '20261112223855';
 
 export const WHATS_NEW = [
+  { v: '1.3.2', date: '2026-11-12', notes: ['Fixed: getting stuck on "Load failed" after being signed out', 'Faster, more reliable startup'] },
   { v: '1.3.1', date: '2026-11-12', notes: ['210 new Would you rather questions (270 total)', 'Pick a category: silly, about us, food, travel, superpowers, flirty, deep, life', 'Write your own questions', 'No repeats until you have played them all'] },
   {
     v: '1.3.0',

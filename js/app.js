@@ -295,7 +295,23 @@ async function boot() {
     await store.init();
   } catch (e) {
     console.error(e);
-    $app.innerHTML = `<div class="welcome"><h1>Can't connect</h1><p class="lead">${esc(e.message)}</p><button class="btn" onclick="location.reload()">Try again</button></div>`;
+    const net = /load failed|failed to fetch|network/i.test(String(e?.message));
+    $app.innerHTML = `<div class="welcome"><div class="center" style="font-size:54px">🥺</div><h1>Can't connect</h1>
+      <p class="lead">${net ? "Two Peas can't reach the internet right now. Try switching between Wi-Fi and cellular, or turning off a VPN or ad blocker." : 'Something went wrong while starting up.'}</p>
+      <button class="btn block" id="bootRetry">Try again</button><div class="sp"></div>
+      <button class="btn ghost block" id="bootReset">Reset Two Peas on this phone</button>
+      <p class="tiny muted center" style="margin-top:14px">Resetting signs you out on this phone only. Nothing you've saved is lost.<br>Details: ${esc(store.backend.step || '')}: ${esc(e?.message || e)}</p></div>`;
+    document.getElementById('bootRetry').onclick = () => location.reload();
+    document.getElementById('bootReset').onclick = async () => {
+      try {
+        const regs = (await navigator.serviceWorker?.getRegistrations?.()) || [];
+        await Promise.all(regs.map((r) => r.unregister()));
+        const keys = (await caches?.keys?.()) || [];
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      } catch { /* ignore */ }
+      try { Object.keys(localStorage).filter((k) => /auth|sb-/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
+      location.reload();
+    };
     return;
   }
   if (store.state === 'ready' && store.couple.pet) ensureDailyQuestion().catch(() => {});

@@ -207,16 +207,42 @@ class LiveBackend {
   constructor(s) { this.s = s; this.urls = new Map(); }
 
   async init() {
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    this.step = 'loading the app';
+    const { createClient } = await import('./vendor/supabase.js');
     this.sb = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
     });
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && this.s.coupleId) this.refresh();
     });
-    const { data: { session } } = await this.sb.auth.getSession();
+    // If the saved login went bad (expired or revoked), sign out on this phone and show the sign-in screen.
+    this.sb.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' && this.s.state === 'ready') { this.s.state = 'auth'; this.s.emit({ type: 'reload' }); }
+    });
+    this.step = 'checking your login';
+    let session = null;
+    try {
+      const r = await withRetry(() => this.sb.auth.getSession());
+      if (r.error) throw r.error;
+      session = r.data.session;
+    } catch (e) {
+      if (isNetwork(e)) throw e;
+      await this.sb.auth.signOut({ scope: 'local' }).catch(() => {});
+      session = null;
+    }
     if (!session) { this.s.state = 'auth'; return; }
-    await this.afterLogin(session.user);
+    try {
+      this.step = 'loading your stuff';
+      await withRetry(() => this.afterLogin(session.user));
+    } catch (e) {
+      if (isNetwork(e)) throw e;
+      if (/jwt|token|auth|401|403/i.test(`${e.message} ${e.code || ''} ${e.status || ''}`)) {
+        await this.sb.auth.signOut({ scope: 'local' }).catch(() => {});
+        this.s.state = 'auth';
+        return;
+      }
+      throw e;
+    }
   }
 
   async afterLogin(user) {
@@ -247,8 +273,8 @@ class LiveBackend {
     await this.afterLogin(data.user);
   }
   async signIn(email, password) {
-    const { data, error } = await this.sb.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    const { data, error } = await withRetry(() => this.sb.auth.signInWithPassword({ email: email.trim(), password }));
+    if (error) throw new Error(/invalid login/i.test(error.message) ? 'That email or password is wrong. Try again?' : error.message);
     await this.afterLogin(data.user);
   }
   async signOut() {
@@ -405,6 +431,17 @@ class LiveBackend {
       endpoint: sub.endpoint, user_id: this.s.me, couple_id: this.s.coupleId, sub,
     }, { onConflict: 'endpoint' });
     if (error) throw error;
+  }
+}
+
+// Network hiccups on phones are common: try a couple of times before giving up.
+export const isNetwork = (e) => /load failed|failed to fetch|network|fetch/i.test(String(e?.message || e)) && !/jwt/i.test(String(e?.message));
+async function withRetry(fn, tries = 3) {
+  for (let i = 0; ; i++) {
+    try { return await fn(); } catch (e) {
+      if (i >= tries - 1 || !isNetwork(e)) throw e;
+      await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+    }
   }
 }
 
