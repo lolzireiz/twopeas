@@ -4,7 +4,7 @@ import { GAME_NAMES, GAME_EMOJI, turnOf, scoreboard, award, wyrPicks, wyrGuesses
 import { hunt, newBoard } from './hunt.js';
 import { header, meName, themName, nameOf, colorFor, empty } from '../ui.js';
 import { esc, timeAgo, sheet, toast, confetti, pick, seededShuffle, uid } from '../util.js';
-import { makeCanvas, paletteHTML, renderStrokes } from '../canvas.js';
+import { makeCanvas, paletteHTML, markPalette } from '../canvas.js';
 
 const isDone = (g) => !!(g.data.winner || g.data.done);
 const myName = () => store.mine.name || 'Your person';
@@ -462,8 +462,9 @@ function draw(g) {
         return () => ctl.destroy();
       },
       actions: {
-        color: (x, el) => { pen.color = x.c; ctl.setColor(x.c); el.parentNode.querySelectorAll('.swatch').forEach((b) => b.classList.toggle('on', b === el)); },
-        size: (x, el) => { pen.size = Number(x.s); ctl.setSize(pen.size); el.parentNode.querySelectorAll('.size-btn').forEach((b) => b.classList.toggle('on', b === el)); },
+        color: (x, el) => { pen.color = x.c; ctl.setColor(x.c); markPalette(document, el); },
+        eraser: (x, el) => { ctl.setErase(); markPalette(document, el); },
+        size: (x, el) => { pen.size = Number(x.s); ctl.setSize(pen.size); markPalette(document, el); },
         undo: () => { strokes.pop(); ctl.redraw(); },
         send: async () => {
           if (!strokes.length) { toast('Draw something first!'); return; }

@@ -48,3 +48,29 @@ export async function hydratePhotos(root) {
 }
 
 export const toggle = (name, on) => `<label class="switch"><input type="checkbox" data-change="${name}" ${on ? 'checked' : ''}><span></span></label>`;
+
+export const notesSeg = (on) => `<div class="seg">
+  <button class="${on === 'notes' ? 'on' : ''}" data-act="go" data-h="#/notes">💌 Chat</button>
+  <button class="${on === 'letters' ? 'on' : ''}" data-act="go" data-h="#/letters">✉️ Letters</button>
+  <button class="${on === 'draw' ? 'on' : ''}" data-act="go" data-h="#/draw">🎨 Draw</button>
+</div>`;
+
+// "Sam is here" pill, kept fresh by the app without redrawing the page.
+const VIEW_WORDS = [
+  [/^board\//, 'drawing with you 🎨'], [/^draw/, 'in Draw'], [/^notes/, 'in your chat 💬'], [/^game\//, 'playing a game'], [/^play/, 'looking at games'],
+  [/^dq/, "on today's question"], [/^snap/, 'on the daily snap'], [/^pet/, 'with the pet'], [/^memories/, 'looking at memories'], [/^letters?/, 'reading letters'],
+];
+export function presenceText() {
+  const p = store.presence;
+  if (!p.online) return '';
+  const v = p.view || '';
+  const w = VIEW_WORDS.find(([re]) => re.test(v));
+  return `${themName()} is ${w ? w[1] : 'here'}`;
+}
+export const presencePill = () => `<span class="presence ${store.presence.online ? 'on' : ''}" data-presence>${presenceText()}</span>`;
+export function refreshPresence() {
+  document.querySelectorAll('[data-presence]').forEach((el) => {
+    el.textContent = presenceText();
+    el.classList.toggle('on', store.presence.online);
+  });
+}

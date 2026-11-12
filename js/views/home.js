@@ -5,11 +5,13 @@ import {
   totals, stageOf, STAGE_NAMES, petState, petMoodText, daysTogether, countdowns, ensureDailyQuestion, dqStatus,
   dqId, dqaId, award, awardCapped, dqStreak, checkinStreak, myTurnGames, GAME_NAMES, GAME_EMOJI, weeklyChallenge, today,
 } from '../logic.js';
-import { header, meName, themName, nameOf, photoImg, empty } from '../ui.js';
+import { header, meName, themName, nameOf, photoImg, empty, presencePill } from '../ui.js';
+import { snapStatus } from './snap.js';
+import { petSVG } from '../pet.js';
 import { esc, timeAgo, fmtDay, sheet, toast, confetti, floatHearts, pick, lsGet, lsSet, isStandalone, dayKey } from '../util.js';
 import { CONFIG } from '../config.js';
 import { enablePush } from '../push.js';
-import { feedRow, feedPet, petTap, afterFeed } from '../feed.js';
+import { feedRow, feedPet, petTap, afterFeed, playToy, sendVisit, openVisit } from '../feed.js';
 import { snacks } from '../logic.js';
 
 function greeting() {
@@ -26,6 +28,7 @@ function petSays(st) {
     if (!replied) return { t: `${them} is feeling ${m.data.mood} today. Send a hug?`, btn: 'Send hug 🤗', act: 'tap', arg: 'hug' };
   }
   if (st.asleep) return { t: 'Zzz… see you both in the morning.' };
+  if (store.presence.online) return { t: `Yay, you're both here! 💚 ${them} is on right now.`, btn: 'Send a hug', act: 'tap', arg: 'hug' };
   if (st.mood === 'sad') return { t: 'I missed you two! Do one little thing together?', btn: 'Daily question', href: '#/dq' };
   const s = dqStatus();
   if (s.q && !s.mine) return { t: s.theirs ? `${them} already answered today's question. Your turn!` : "Today's question is waiting for you!", btn: 'Answer', href: '#/dq' };
@@ -53,7 +56,7 @@ function petCard() {
   const say = petSays(st);
   return `<div class="card pet-card">
     <div class="room-wrap pet-bob" data-act="petPet">
-      ${roomWithPet(c.room, { species: pet.species, mood: st.face, stage, outfit: c.outfit || {} }, st.night)}
+      ${roomWithPet(c.room, { species: pet.species, mood: store.presence.online && !st.asleep ? 'love' : st.face, stage, outfit: c.outfit || {} }, st.night)}
       <div class="bubble" id="petBubble"></div>
     </div>
     <div class="pet-info">
@@ -68,6 +71,7 @@ function petCard() {
         <div class="meter love">Love<div class="bar"><i style="width:${Math.round(st.love * 100)}%"></i></div></div>
       </div>
       ${feedRow()}
+      <div class="pet-btns"><button class="btn small ghost" data-act="toy">🎾 Play</button><button class="btn small ghost" data-act="visit">💌 Send ${esc(pet.name)} to ${themName()}</button></div>
     </div>
   </div>`;
 }
@@ -141,55 +145,94 @@ function moodsCard() {
 
 function tapsCard() {
   return `<div class="card">
-    <h2>Send ${themName()} a little something</h2>
+    <h2>Send a little something</h2>
     <div class="taps">${TAPS.map((t) => `<button class="tap" data-act="tap" data-t="${t.id}"><span class="e">${t.e}</span>${t.l}</button>`).join('')}</div>
   </div>`;
 }
 
+let todayOpen = false;
 function todayCard() {
   const rows = [];
   const s = dqStatus();
+  const sn = snapStatus();
+  const snapText = !sn.mine ? (sn.theirs ? `${themName()} sent theirs. Send yours to see it!` : 'Send one photo today') : !sn.theirs ? `Waiting for ${themName()}'s snap…` : 'Both in! Tap to see 📸';
+  rows.push({ p: !sn.mine ? (sn.theirs ? 1 : 3) : sn.theirs ? 8 : 9, h: `<a class="todo" href="#/snap"><div class="ic">📷</div><div class="tx"><b>Daily snap</b><span>${snapText}</span></div>${!sn.mine ? '<span class="dot"></span>' : ''}<span class="chev">›</span></a>` });
   const dqText = !s.q ? 'Loading today\'s question…'
     : !s.mine ? (s.theirs ? `${themName()} answered. Your turn!` : 'Answer to unlock each other\'s answers')
       : !s.theirs ? `Waiting for ${themName()}…` : 'Both answered. See what you said!';
-  rows.push(`<a class="todo" href="#/dq"><div class="ic">💭</div><div class="tx"><b>Daily question</b><span>${dqText}</span></div>${!s.mine && s.q ? '<span class="dot"></span>' : ''}<span class="chev">›</span></a>`);
+  rows.push({ p: !s.mine ? (s.theirs ? 1 : 2) : s.theirs ? 7 : 9, h: `<a class="todo" href="#/dq"><div class="ic">💭</div><div class="tx"><b>Daily question</b><span>${dqText}</span></div>${!s.mine && s.q ? '<span class="dot"></span>' : ''}<span class="chev">›</span></a>` });
   for (const g of myTurnGames().slice(0, 3)) {
-    rows.push(`<a class="todo" href="#/game/${g.id}"><div class="ic">${GAME_EMOJI[g.data.type]}</div><div class="tx"><b>Your turn</b><span>${GAME_NAMES[g.data.type]} with ${themName()}</span></div><span class="dot"></span><span class="chev">›</span></a>`);
+    rows.push({ p: 2, h: `<a class="todo" href="#/game/${g.id}"><div class="ic">${GAME_EMOJI[g.data.type]}</div><div class="tx"><b>Your turn</b><span>${GAME_NAMES[g.data.type]} with ${themName()}</span></div><span class="dot"></span><span class="chev">›</span></a>` });
   }
   const unread = store.all('note', (n) => n.data.to === store.me && !n.data.readAt);
-  if (unread.length) rows.push(`<a class="todo" href="#/notes"><div class="ic">💌</div><div class="tx"><b>${unread.length} new note${unread.length > 1 ? 's' : ''}</b><span>${esc(unread[unread.length - 1].data.text)}</span></div><span class="dot"></span><span class="chev">›</span></a>`);
+  if (unread.length) {
+    const l = unread[unread.length - 1].data;
+    rows.push({ p: 0, h: `<a class="todo" href="#/notes"><div class="ic">💌</div><div class="tx"><b>${unread.length} new message${unread.length > 1 ? 's' : ''}</b><span>${l.audio ? '🎙️ Voice note' : l.photo && !l.text ? '📷 Photo' : esc(l.text)}</span></div><span class="dot"></span><span class="chev">›</span></a>` });
+  }
   const t = today();
   const letters = store.all('letter', (l) => l.data.to === store.me && !l.data.openedAt);
   const ready = letters.filter((l) => !l.data.unlock || l.data.unlock <= t);
-  if (ready.length) rows.push(`<a class="todo" href="#/letters"><div class="ic">✉️</div><div class="tx"><b>${ready.length} sealed letter${ready.length > 1 ? 's' : ''}</b><span>${esc(ready[0].data.label)}</span></div><span class="chev">›</span></a>`);
+  if (ready.length) rows.push({ p: 1, h: `<a class="todo" href="#/letters"><div class="ic">✉️</div><div class="tx"><b>${ready.length} sealed letter${ready.length > 1 ? 's' : ''}</b><span>${esc(ready[0].data.label)}</span></div><span class="chev">›</span></a>` });
   const ch = weeklyChallenge();
-  rows.push(`<a class="todo" href="#/challenge"><div class="ic">🏆</div><div class="tx"><b>This week's challenge</b><span>${ch.both ? 'Done together! 🎉' : esc(ch.text)}</span></div><span class="chev">›</span></a>`);
+  rows.push({ p: ch.both ? 10 : ch.doneThem && !ch.doneMe ? 3 : 6, h: `<a class="todo" href="#/challenge"><div class="ic">🏆</div><div class="tx"><b>This week's challenge</b><span>${ch.both ? 'Done together! 🎉' : esc(ch.text)}</span></div><span class="chev">›</span></a>` });
   const md = t.slice(5);
   const otd = store.all('memory', (m) => m.data.date && m.data.date.slice(5) === md && m.data.date.slice(0, 4) < t.slice(0, 4));
   if (otd.length) {
     const m = otd[0];
     const yrs = Number(t.slice(0, 4)) - Number(m.data.date.slice(0, 4));
-    rows.push(`<a class="todo" href="#/memories"><div class="ic">📸</div><div class="tx"><b>On this day, ${yrs} year${yrs > 1 ? 's' : ''} ago</b><span>${esc(m.data.caption || 'A memory')}</span></div><span class="chev">›</span></a>`);
+    rows.push({ p: 4, h: `<a class="todo" href="#/memories"><div class="ic">📸</div><div class="tx"><b>On this day, ${yrs} year${yrs > 1 ? 's' : ''} ago</b><span>${esc(m.data.caption || 'A memory')}</span></div><span class="chev">›</span></a>` });
   }
+  rows.sort((a, b) => a.p - b.p);
+  const shown = todayOpen ? rows : rows.slice(0, 3);
   const streak = Math.max(dqStreak(), checkinStreak());
   return `<div class="card">
     <div class="card-head"><h2>Today</h2>${streak ? `<span class="pill gold">🔥 ${streak} day streak</span>` : ''}</div>
-    ${rows.join('')}
+    ${shown.map((r) => r.h).join('')}
+    ${rows.length > 3 ? `<button class="more-btn" data-act="todayMore">${todayOpen ? 'Show less' : `Show ${rows.length - 3} more`}</button>` : ''}
+  </div>`;
+}
+
+// Moods and days together in one small card.
+function usCard() {
+  const latest = (who) => { const m = store.all('mood', (x) => x.by === who); return m[m.length - 1]; };
+  const chip = (who, cls, name) => {
+    const m = latest(who);
+    const mood = m && MOODS.find((x) => x.id === m.data.mood);
+    const fresh = m && Date.now() - m.at < 36 * 36e5;
+    return `<div class="mood-chip ${cls}"><span class="e" style="${mood && fresh ? '' : 'opacity:.35'}">${mood && fresh ? mood.e : '😶'}</span><div class="grow"><b>${name}</b><span>${mood && fresh ? `${mood.l}${m.data.text ? ` · ${esc(m.data.text)}` : ''}` : 'No check-in yet'}</span></div></div>`;
+  };
+  const n = daysTogether();
+  const next = countdowns()[0];
+  return `<div class="card">
+    <div class="card-head"><h2>How you're doing</h2><button class="btn small" data-act="checkin">Check in</button></div>
+    ${chip(store.me, 'me', meName())}${chip(store.partnerId, 'them', themName())}
+    ${n || next ? `<a class="days-line" href="#/countdowns">${n ? `<b>${n.toLocaleString()}</b> days together` : ''}${n && next ? ' · ' : ''}${next ? `${next.emoji} ${esc(next.title)} ${next.days === 0 ? 'today!' : `in ${next.days}d`}` : ''}<span class="chev">›</span></a>` : ''}
+  </div>`;
+}
+
+function visitCard() {
+  const v = store.all('visit', (x) => x.data.to === store.me && !x.data.readAt).pop();
+  if (!v) return '';
+  const pet = store.couple.pet || { species: 'raccoon', name: 'Your pet' };
+  return `<div class="card visit-card" data-act="openVisit" data-id="${v.id}">
+    <div class="visit-pet">${petSVG({ species: pet.species, mood: 'love', outfit: store.couple.outfit || {} })}<span class="visit-env">💌</span></div>
+    <div class="grow"><b>${esc(pet.name)} came to visit!</b><div class="small muted">With a message from ${nameOf(v.by)}</div></div>
+    <button class="btn small pink">Read</button>
   </div>`;
 }
 
 export function home() {
   ensureDailyQuestion().catch(() => {});
   return {
-    html: `${header(`<span class="row gap">${logoSVG(34)}Two Peas</span>`, { sub: `${greeting()}, ${meName()}`, right: '<a class="icon-btn" href="#/settings" aria-label="Settings">⚙️</a>' })}
+    html: `${header(`<span class="row gap">${logoSVG(34)}Two Peas</span>`, { sub: `${greeting()}, ${meName()} ${presencePill()}`, right: '<a class="icon-btn" href="#/settings" aria-label="Settings">⚙️</a>' })}
       ${waitingCard()}
+      ${visitCard()}
       ${gotTap()}
       ${petCard()}
       ${pushCard()}
       ${todayCard()}
       ${tapsCard()}
-      ${moodsCard()}
-      ${daysCard()}`,
+      ${usCard()}`,
     mount: (root) => {
       afterFeed(root);
       const card = root.querySelector('.got-tap');
@@ -207,6 +250,10 @@ export function home() {
         if (!last || Date.now() - last.at > 10 * 60e3) setTimeout(() => store.add('pet', {}), 2400);
       },
       feed: (d, el) => feedPet(el),
+      toy: (d, el) => playToy(el),
+      visit: () => sendVisit(),
+      openVisit: (d) => openVisit(store.get(d.id)),
+      todayMore: () => { todayOpen = !todayOpen; return true; },
       tap: (d, el) => sendTap(d.t, el),
       tapBack: (d, el) => { lsSet('twopeas-tap-seen', d.id); sendTap(d.t, el); return true; },
       checkin: () => moodSheet(),

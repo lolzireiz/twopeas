@@ -1,61 +1,18 @@
 import { store } from '../store.js';
 import { LETTER_LABELS } from '../content.js';
 import { awardCapped, award, today } from '../logic.js';
-import { header, meName, themName, nameOf, empty, meColor } from '../ui.js';
+import { header, meName, themName, nameOf, empty, notesSeg } from '../ui.js';
 import { esc, timeAgo, fmtDay, sheet, toast, confetti, confirmSheet, lsGet, lsSet, floatHearts, dayKey } from '../util.js';
 import { bus } from '../bus.js';
-import { makeCanvas, paletteHTML, renderStrokes, CW, CH } from '../canvas.js';
 import { memorySheet } from './us.js';
 
 const myName = () => store.mine.name || 'Your person';
 
-const seg = (on) => `<div class="seg">
-  <button class="${on === 'notes' ? 'on' : ''}" data-act="go" data-h="#/notes">💌 Notes</button>
-  <button class="${on === 'letters' ? 'on' : ''}" data-act="go" data-h="#/letters">✉️ Letters</button>
-  <button class="${on === 'draw' ? 'on' : ''}" data-act="go" data-h="#/draw">🎨 Draw</button>
-</div>`;
+const seg = (on) => notesSeg(on);
 const go = (d) => { location.hash = d.h; };
 
-// ---------------- Notes ----------------
-export function notes() {
-  const list = store.all('note');
-  let lastDay = '';
-  const items = list.map((n) => {
-    const mine = n.by === store.me;
-    const day = fmtDay(dayKey(new Date(n.at)));
-    const sep = day !== lastDay ? `<div class="center tiny muted bold" style="margin:10px 0 4px">${day}</div>` : '';
-    lastDay = day;
-    return `${sep}<div class="note ${mine ? 'me' : 'them'}">${esc(n.data.text)}</div>
-      <div class="note-time ${mine ? 'me' : ''}">${timeAgo(n.at)}${mine && n.data.readAt ? ' · read 💚' : ''}</div>`;
-  });
-  return {
-    html: `${header('Notes')}${seg('notes')}
-      <div class="card"><div class="notes" id="notes">${items.join('') || empty('💌', `Leave ${themName()} a little note. It pins to their home screen until they read it.`)}</div>
-      <div class="compose"><textarea data-input="noteText" rows="1" placeholder="Write a note…" maxlength="500"></textarea><button class="btn" data-act="send" aria-label="Send">➤</button></div></div>`,
-    mount: () => {
-      const unread = store.all('note', (n) => n.data.to === store.me && !n.data.readAt);
-      if (unread.length) setTimeout(() => unread.forEach((n) => store.update(n.id, { readAt: Date.now() })), 600);
-      const ta = document.querySelector('[data-input="noteText"]');
-      const grow = () => { ta.style.height = 'auto'; ta.style.height = `${Math.min(140, ta.scrollHeight)}px`; };
-      ta.addEventListener('input', grow);
-    },
-    actions: {
-      go,
-      send: async (d, el) => {
-        const ta = document.querySelector('[data-input="noteText"]');
-        const text = ta.value.trim();
-        if (!text) return;
-        ta.value = '';
-        const r = el.getBoundingClientRect();
-        floatHearts(r.left, r.top, 3);
-        await store.add('note', { to: store.partnerId, text });
-        awardCapped(5, 'note');
-        store.notify('note', `💌 Note from ${myName()}`, text, '#/notes');
-        return true;
-      },
-    },
-  };
-}
+export { notes } from './chat.js';
+export { boards, board } from './draw.js';
 
 // ---------------- Letters ----------------
 export function letters() {
@@ -160,110 +117,3 @@ export function letter({ id }) {
   };
 }
 
-// ---------------- Draw together ----------------
-export function boards() {
-  const list = store.all('board').reverse();
-  return {
-    html: `${header('Draw')}${seg('draw')}
-      <button class="btn block" data-act="newBoard">🎨 New drawing</button><div class="sp"></div>
-      <div class="grid2">${list.map((b) => `<a class="board-thumb" href="#/board/${b.id}">${b.data.thumb ? `<img src="${b.data.thumb}" alt="" style="flex:1;min-height:0;object-fit:cover">` : '<div style="flex:1;display:grid;place-items:center;font-size:34px">🎨</div>'}<div>${esc(b.data.title)}</div></a>`).join('')}</div>
-      ${list.length ? '' : `<div class="card">${empty('🎨', `A shared canvas. You both draw at the same time, in your own colors.`)}</div>`}`,
-    actions: {
-      go,
-      newBoard: async () => {
-        const n = store.all('board').length + 1;
-        const b = await store.add('board', { title: `Doodle #${n}` });
-        location.hash = `#/board/${b.id}`;
-      },
-    },
-  };
-}
-
-let pen = null;
-export function board({ id }) {
-  const b = store.get(id);
-  if (!b) return { html: `${header('Draw', { back: '#/draw' })}${empty('🎨', 'Drawing not found')}` };
-  pen = pen || { color: meColor().hex, size: 10 };
-  const strokes = () => store.all('stroke', (s) => s.data.board === id).map((s) => s.data.s);
-  let ctl;
-  let startCount = 0;
-  return {
-    live: false,
-    html: `${header(esc(b.data.title), { back: '#/draw', right: '<button class="icon-btn" data-act="rename" aria-label="Rename">✏️</button>' })}
-      <div class="canvas-wrap" id="cv"></div>
-      ${paletteHTML(pen.color, pen.size)}
-      <div class="row gap"><button class="btn ghost grow" data-act="undo">Undo</button><button class="btn ghost grow" data-act="clear">Clear</button><button class="btn grow" data-act="save">Save 📸</button></div>
-      <p class="small muted center" style="margin-top:10px">${themName()} sees your strokes as you draw them.</p>`,
-    mount: (root) => {
-      ctl = makeCanvas(root.querySelector('#cv'), {
-        strokes, color: pen.color, size: pen.size,
-        onStroke: async (s) => {
-          await store.add('stroke', { board: id, s });
-          const k = `twopeas-drawn-${id}`;
-          if (Date.now() - (lsGet(k, 0) || 0) > 30 * 60e3) {
-            lsSet(k, Date.now());
-            store.notify('memory', `${myName()} is drawing 🎨`, b.data.title, `#/board/${id}`);
-          }
-        },
-      });
-      store.loadStrokes(id).then(() => { startCount = strokes().length; ctl.redraw(); });
-      return () => {
-        ctl.destroy();
-        if (strokes().length !== startCount) saveThumb(id, strokes());
-      };
-    },
-    onChange: (ch) => {
-      if (ch.type === 'reload') { ctl?.redraw(); return false; }
-      if (ch.item?.kind === 'stroke' || ch.type === 'remove') { if (!ctl?.drawing) ctl?.redraw(); }
-      if (ch.item?.id === id && ch.type === 'update' && ch.remote) return false;
-      return false;
-    },
-    actions: {
-      color: (x, el) => { pen.color = x.c; ctl.setColor(x.c); el.parentNode.querySelectorAll('.swatch').forEach((s) => s.classList.toggle('on', s === el)); },
-      size: (x, el) => { pen.size = Number(x.s); ctl.setSize(pen.size); el.parentNode.querySelectorAll('.size-btn').forEach((s) => s.classList.toggle('on', s === el)); },
-      undo: () => {
-        const mine = store.all('stroke', (s) => s.data.board === id && s.by === store.me);
-        const last = mine[mine.length - 1];
-        if (last) store.remove(last.id);
-      },
-      clear: async () => {
-        if (!(await confirmSheet('Clear the whole drawing?', 'This wipes it for both of you.', 'Clear'))) return;
-        for (const s of store.all('stroke', (x) => x.data.board === id)) store.remove(s.id);
-      },
-      rename: () => sheet({
-        title: 'Rename drawing',
-        body: `<input type="text" data-n maxlength="40" value="${esc(b.data.title)}"><div class="sp"></div><button class="btn block" data-save>Save</button>`,
-        onMount: (el, close) => {
-          el.querySelector('[data-save]').onclick = async () => {
-            const t = el.querySelector('[data-n]').value.trim();
-            close();
-            if (t) { await store.update(id, { title: t }); bus.rerender(); }
-          };
-        },
-      }),
-      save: async () => {
-        const c = document.createElement('canvas');
-        c.width = 800;
-        c.height = 1000;
-        renderStrokes(c, strokes());
-        const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
-        const dataUrl = store.mode === 'demo' ? (() => { const s = document.createElement('canvas'); s.width = 480; s.height = 600; renderStrokes(s, strokes()); return s.toDataURL('image/jpeg', 0.7); })() : null;
-        const photo = await store.uploadPhoto(blob, dataUrl);
-        await store.add('memory', { caption: `🎨 ${b.data.title}`, photo, date: today(), place: '', milestone: false });
-        await award(10, 'drawing', `drawing-${id}`);
-        saveThumb(id, strokes());
-        toast('Saved to Memories 📸');
-      },
-    },
-  };
-}
-
-function saveThumb(id, strokes) {
-  const c = document.createElement('canvas');
-  c.width = 240;
-  c.height = 300;
-  renderStrokes(c, strokes);
-  store.update(id, { thumb: c.toDataURL('image/jpeg', 0.6) });
-}
-
-export { CW, CH };

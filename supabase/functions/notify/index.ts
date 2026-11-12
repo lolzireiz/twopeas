@@ -116,7 +116,7 @@ async function scheduleCouple(cid: string) {
   const { data: mems } = await db.from('members').select('user_id').eq('couple_id', cid);
   if (!mems || mems.length < 2) return 0;
   const { data: rows } = await db.from('items').select('id, kind, data, created_by, created_at, updated_at')
-    .eq('couple_id', cid).in('kind', ['profile', 'couple', 'dqa', 'letter', 'countdown', 'memory', 'plan']).limit(5000);
+    .eq('couple_id', cid).in('kind', ['profile', 'couple', 'dqa', 'letter', 'countdown', 'memory', 'plan', 'snap']).limit(5000);
   const items = (rows ?? []) as Item[];
   const byId = new Map(items.map((i) => [i.id, i]));
   const couple = byId.get('couple')?.data ?? {};
@@ -167,6 +167,11 @@ async function scheduleCouple(cid: string) {
         body: answered(other, D) ? 'Answer yours to see what they said' : 'It only takes a minute',
         url: '#/dq',
       });
+    }
+
+    // 6pm: they sent today's snap and you haven't
+    if (t.hour >= 18 && t.hour < 21 && byId.has(`snap-${D}-${other}`) && !byId.has(`snap-${D}-${me}`)) {
+      sent += await once(k('snap'), cid, me, { type: 'memory', title: `📷 ${otherName}'s snap is waiting`, body: 'Send yours to unlock it', url: '#/snap' });
     }
 
     // 9:30pm: streak about to break

@@ -4,7 +4,7 @@ import { roomWithPet, itemPreview, petSVG } from '../pet.js';
 import { totals, stageOf, STAGE_NAMES, petState, petMoodText, owned, bestStreak } from '../logic.js';
 import { header, themName } from '../ui.js';
 import { esc, sheet, toast, confetti, confirmSheet } from '../util.js';
-import { feedRow, feedPet, petTap, afterFeed } from '../feed.js';
+import { feedRow, feedPet, petTap, afterFeed, playToy, sendVisit } from '../feed.js';
 
 let tab = 'outfits';
 const myName = () => store.mine.name || 'Your person';
@@ -51,7 +51,7 @@ export function view() {
   return {
     html: `${header(esc(pet.name), { sub: `${SPECIES[pet.species]?.name || ''} · ${STAGE_NAMES[stage]}`, right: `<span class="coins">🪙 ${t.wallet.toLocaleString()}</span>` })}
       <div class="card pet-card">
-        <div class="room-wrap pet-bob" data-act="petPet">${roomWithPet(c.room, { species: pet.species, mood: st.face, stage, outfit: c.outfit || {} }, st.night)}<div class="bubble" id="petBubble"></div></div>
+        <div class="room-wrap pet-bob" data-act="petPet">${roomWithPet(c.room, { species: pet.species, mood: store.presence.online && !st.asleep ? 'love' : st.face, stage, outfit: c.outfit || {} }, st.night)}<div class="bubble" id="petBubble"></div></div>
         <div class="pet-info">
           <div class="small bold muted">${petMoodText(esc(pet.name), st.mood, st.asleep)}</div>
           <div class="row between" style="margin-top:8px"><b>Level ${t.level}</b><span class="small muted bold">${t.earned.toLocaleString()} / ${t.nextLvl.toLocaleString()} XP</span></div>
@@ -62,6 +62,7 @@ export function view() {
             <div class="meter love">Love<div class="bar"><i style="width:${Math.round(st.love * 100)}%"></i></div></div>
           </div>
           ${feedRow()}
+          <div class="pet-btns"><button class="btn small ghost" data-act="toy">🎾 Play</button><button class="btn small ghost" data-act="visit">💌 Send to ${themName()}</button></div>
         </div>
       </div>
       <div class="seg">${[['outfits', '👒 Outfits'], ['room', '🛋️ Room'], ['shop', '🛍️ Shop']].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="tab" data-t="${k}">${l}</button>`).join('')}</div>
@@ -73,6 +74,8 @@ export function view() {
       tab: (d) => { tab = d.t; return true; },
       petPet: (d, el, e) => petTap(el, e),
       feed: (d, el) => feedPet(el),
+      toy: (d, el) => playToy(el),
+      visit: () => sendVisit(),
       equip: async (d) => {
         const key = OUTFIT_SLOTS.includes(d.slot) ? 'outfit' : 'room';
         await store.update('couple', (cd) => ({ ...cd, [key]: { ...(cd[key] || {}), [d.slot]: d.id === 'none' ? null : d.id } }));

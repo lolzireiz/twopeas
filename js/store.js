@@ -18,6 +18,9 @@ class Store {
     this.coupleId = null;
     this.pairCode = null;
     this.state = 'loading'; // loading | auth | pair | ready
+    this.presence = { online: false, view: null };
+    this.view = null;
+    this.signalFns = new Set();
     this.backend = this.mode === 'live' ? new LiveBackend(this) : new DemoBackend(this);
   }
 
@@ -104,6 +107,18 @@ class Store {
   }
 
   uploadPhoto(blob, dataUrl) { return this.backend.uploadPhoto(blob, dataUrl); }
+  uploadFile(blob, ext, type) { return this.backend.uploadFile(blob, ext, type); }
+
+  // Live presence: what the other person is doing right now.
+  setView(view) {
+    if (view === this.view) return;
+    this.view = view;
+    this.backend.track?.();
+  }
+  // Fire-and-forget live signals (in-progress strokes, typing). Not saved.
+  signal(t, payload = {}) { this.backend.broadcast?.({ t, ...payload, from: this.me }); }
+  onSignal(fn) { this.signalFns.add(fn); return () => this.signalFns.delete(fn); }
+  gotSignal(p) { for (const fn of this.signalFns) { try { fn(p); } catch (e) { console.error(e); } } }
   photoUrl(ref) { return this.backend.photoUrl(ref); }
   loadStrokes(board) { return this.backend.loadStrokes(board); }
 }
@@ -179,6 +194,9 @@ class DemoBackend {
     this.save();
   }
   async uploadPhoto(blob, dataUrl) { return dataUrl; }
+  async uploadFile(blob) {
+    return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+  }
   async photoUrl(ref) { return ref; }
   async loadStrokes() { return; }
 }
@@ -211,6 +229,7 @@ class LiveBackend {
     await this.loadMembers();
     await this.fetchAll();
     this.subscribe();
+    this.joinRoom();
     this.s.state = 'ready';
   }
 
@@ -294,6 +313,33 @@ class LiveBackend {
       .subscribe();
   }
 
+  // Presence + broadcast on a separate channel.
+  joinRoom() {
+    if (this.room) this.sb.removeChannel(this.room);
+    const s = this.s;
+    this.room = this.sb.channel(`room-${s.coupleId}`, { config: { presence: { key: s.me }, broadcast: { self: false } } })
+      .on('presence', { event: 'sync' }, () => {
+        const st = this.room.presenceState();
+        const theirs = (st[s.partnerId] || [])[0];
+        const was = s.presence.online;
+        s.presence = { online: !!theirs, view: theirs?.view || null };
+        s.emit({ type: 'presence', flipped: was !== s.presence.online });
+      })
+      .on('broadcast', { event: 'live' }, ({ payload }) => s.gotSignal(payload))
+      .subscribe((status) => { if (status === 'SUBSCRIBED') this.track(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') this.track();
+      else this.room?.untrack().catch(() => {});
+    });
+  }
+  track() {
+    if (!this.room || document.visibilityState !== 'visible') return;
+    this.room.track({ view: this.s.view, at: Date.now() }).catch(() => {});
+  }
+  broadcast(payload) {
+    this.room?.send({ type: 'broadcast', event: 'live', payload }).catch?.(() => {});
+  }
+
   onRow(r, type) {
     const it = this.row(r);
     this.s.items.set(it.id, it);
@@ -329,9 +375,10 @@ class LiveBackend {
     try { await this.sb.functions.invoke('notify', { body: payload }); } catch (e) { console.warn('notify failed', e); }
   }
 
-  async uploadPhoto(blob) {
-    const path = `${this.s.coupleId}/${uid(16)}.jpg`;
-    const { error } = await this.sb.storage.from('photos').upload(path, blob, { contentType: 'image/jpeg' });
+  async uploadPhoto(blob) { return this.uploadFile(blob, 'jpg', 'image/jpeg'); }
+  async uploadFile(blob, ext, type) {
+    const path = `${this.s.coupleId}/${uid(16)}.${ext}`;
+    const { error } = await this.sb.storage.from('photos').upload(path, blob, { contentType: type });
     if (error) throw error;
     return `sb:${path}`;
   }

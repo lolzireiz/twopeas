@@ -1,7 +1,7 @@
 import { store } from './store.js';
 import { APP_VERSION, WHATS_NEW } from './config.js';
 import { toast, sheet, lsGet, lsSet, esc, dayKey } from './util.js';
-import { applyColors, hydratePhotos } from './ui.js';
+import { applyColors, hydratePhotos, refreshPresence } from './ui.js';
 import { myTurnGames, ensureDailyQuestion, dqStatus, turnOf, GAME_NAMES } from './logic.js';
 import { TAPS, MOODS } from './content.js';
 import { needsOnboarding, onboarding } from './views/onboarding.js';
@@ -16,6 +16,7 @@ import * as notes from './views/notes.js';
 import * as petView from './views/petview.js';
 import * as settings from './views/settings.js';
 import * as extras from './views/extras.js';
+import * as snapView from './views/snap.js';
 import { STICKERS, earned } from './stickers.js';
 import { confetti } from './util.js';
 
@@ -23,6 +24,7 @@ const ROUTES = [
   ['home', home.home, 'home'],
   ['dq', home.dq, 'home'],
   ['dq/history', home.dqHistory, 'home'],
+  ['snap', snapView.snap, 'home'],
   ['play', play.list, 'play'],
   ['game/:id', play.game, 'play'],
   ['us', us.hub, 'us'],
@@ -144,6 +146,7 @@ export function render() {
   document.body.classList.toggle('has-demo', store.mode === 'demo' && !onboard);
   $app.innerHTML = `${!onboard ? demoBar() : ''}${out.html.startsWith('<div class="welcome') ? out.html : `<div class="view ${tabs ? '' : 'no-tabs'}">${out.html}</div>`}${tabs ? tabbar(route.tab) : ''}`;
   current = { out, route };
+  if (!onboard) store.setView(route.path);
   restoreInputs(kept);
   if (out.mount) {
     try { current.cleanup = out.mount($app); } catch (e) { console.error(e); }
@@ -237,6 +240,12 @@ window.addEventListener('hashchange', () => render());
 store.on((change) => {
   if (change.remote && change.type === 'add') announce(change.item);
   if (change.type === 'switch') { schedule(); return; }
+  if (change.type === 'presence') {
+    refreshPresence();
+    if (change.flipped && ['home', 'pet'].includes((current?.route?.path || '').split('?')[0])) schedule();
+    current?.out?.onChange?.(change);
+    return;
+  }
   if (current?.out?.live === false && current.out.onChange) {
     let again = false;
     try { again = current.out.onChange(change) === true; } catch (e) { console.error(e); }
@@ -252,13 +261,16 @@ function announce(it) {
   const tap = TAPS.find((t) => t.id === d.type);
   const msg = {
     tap: d.to === store.me && tap ? `${tap.e} ${who} ${tap.push.replace(/ \S+$/, '')}` : null,
-    note: d.to === store.me ? `💌 New note from ${who}` : null,
+    note: d.to === store.me && !location.hash.startsWith('#/notes') ? `💌 ${d.audio ? 'Voice note' : d.photo ? 'Photo' : 'Message'} from ${who}` : null,
     letter: d.to === store.me ? `✉️ ${who} sent you a letter` : null,
     dqa: `💭 ${who} answered today's question`,
     memory: `📸 ${who} added a memory`,
     mood: `${MOODS.find((m) => m.id === d.mood)?.e || '💚'} ${who} checked in`,
     game: turnOf(it) === store.me ? `🎮 ${who} started ${GAME_NAMES[d.type]}` : null,
     appr: d.to === store.me ? `🫙 ${who} added to your love jar` : null,
+    snap: `📷 ${who} sent today's snap`,
+    visit: d.to === store.me ? `🐾 ${esc(store.couple.pet?.name || 'Your pet')} came to visit from ${who}` : null,
+    board: `🎨 ${who} started a drawing`,
   }[it.kind];
   if (msg) toast(msg);
 }
