@@ -65,7 +65,7 @@ class Store {
       console.error(e);
       this.items.delete(id);
       this.emit({ type: 'remove', id });
-      toast("Couldn't save that. Check your connection and try again.");
+      if (window.__connTrouble) window.__connTrouble('save'); else toast("Couldn't save that. Check your connection and try again.");
       throw e;
     }
     return this.items.get(id);
@@ -82,7 +82,7 @@ class Store {
       await this.backend.patch(next);
     } catch (e) {
       console.error(e);
-      toast("Couldn't sync that change. It'll show again when you're back online.");
+      if (window.__connTrouble) window.__connTrouble('save'); else toast("Couldn't sync that change.");
     }
     return next;
   }
@@ -435,10 +435,11 @@ class LiveBackend {
 }
 
 // Network hiccups on phones are common: try a couple of times before giving up.
-export const isNetwork = (e) => /load failed|failed to fetch|network|fetch/i.test(String(e?.message || e)) && !/jwt/i.test(String(e?.message));
+export const isNetwork = (e) => /load failed|failed to fetch|network|fetch|timed out/i.test(String(e?.message || e)) && !/jwt/i.test(String(e?.message));
+const timeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('Connection timed out')), ms))]);
 async function withRetry(fn, tries = 3) {
   for (let i = 0; ; i++) {
-    try { return await fn(); } catch (e) {
+    try { return await timeout(fn(), 9000); } catch (e) {
       if (i >= tries - 1 || !isNetwork(e)) throw e;
       await new Promise((r) => setTimeout(r, 800 * (i + 1)));
     }

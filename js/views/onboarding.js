@@ -102,6 +102,7 @@ function auth() {
       <h1>Two Peas</h1>
       <p class="lead">${up ? 'Make your account. You only do this once on each phone.' : 'Welcome back!'}</p>
       <div class="seg"><button data-act="mode" data-m="signup" class="${up ? 'on' : ''}">New here</button><button data-act="mode" data-m="signin" class="${up ? '' : 'on'}">Sign in</button></div>
+      ${ob.err ? `<div class="card flat small" style="background:#fff3e0">${ob.err}</div>` : ''}
       <form data-form="auth">
         <label class="field">Email</label>
         <input type="email" name="email" autocomplete="email" required>
@@ -118,7 +119,15 @@ function auth() {
         try {
           if (up) await store.backend.signUp(f.email, f.password);
           else await store.backend.signIn(f.email, f.password);
-        } catch (e) { toast(esc(e.message || 'Something went wrong')); }
+        } catch (e) {
+          if (/load failed|failed to fetch|network|timeout/i.test(String(e?.message))) {
+            const { supabaseStatus } = await import('../status.js');
+            const st = await supabaseStatus();
+            ob.err = st?.outage
+              ? `🛠️ It's not you! Supabase (where Two Peas keeps everything) is having problems right now${st.title ? `: ${esc(st.title)}` : ''}. Your account is safe. Try again in a bit.`
+              : "📶 Couldn't reach the server. Check your internet (try Wi-Fi vs cellular) and try again.";
+          } else { ob.err = ''; toast(esc(e.message || 'Something went wrong')); }
+        }
         ob.busy = false;
         return true;
       },
