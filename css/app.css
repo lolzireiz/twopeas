@@ -505,3 +505,4 @@ label.field { display: block; font-weight: 800; font-size: 14px; margin: 14px 0 
 .guess-chips span.warm { background: #fde9da; color: #c4602a; text-decoration: none; }
 .guess-chips span.warm::after { content: ' 🔥'; }
 .guess-chips span.ok { background: #d9efcf; color: #3f8a2f; text-decoration: none; }
+.score-sub { text-align: center; font-size: 12.5px; font-weight: 800; color: var(--muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }

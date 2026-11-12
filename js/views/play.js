@@ -1,6 +1,6 @@
 import { store } from '../store.js';
 import { WYR, WYR_CAT, WYR_CATS, DRAW_PROMPTS, WORDS, drawKind } from '../content.js';
-import { GAME_NAMES, GAME_EMOJI, turnOf, scoreboard, award, wyrPicks, wyrGuesses } from '../logic.js';
+import { GAME_NAMES, GAME_EMOJI, turnOf, scoreboard, award, wyrPicks, wyrGuesses, gameWinner } from '../logic.js';
 import { hunt, newBoard } from './hunt.js';
 import { header, meName, themName, nameOf, colorFor, empty } from '../ui.js';
 import { esc, timeAgo, sheet, toast, confetti, pick, seededShuffle, uid } from '../util.js';
@@ -18,7 +18,10 @@ function wyrMatches(g) {
 
 function resultText(g) {
   const w = g.data.winner;
-  if (g.data.type === 'wyr') return `Matched ${wyrMatches(g)} of ${g.data.qs.length}`;
+  if (g.data.type === 'wyr') {
+    const w2 = gameWinner(g);
+    return `Matched ${wyrMatches(g)}/${g.data.qs.length} · ${w2 === store.me ? 'You know them better 🏆' : w2 === store.partnerId ? `${themName()} knows you better` : 'Tied on guesses'}`;
+  }
   if (g.data.type === 'draw') return w === 'team' ? `Guessed "${esc(g.data.prompt)}" 🎉` : `It was "${esc(g.data.prompt)}"`;
   if (w === 'draw') return "It's a tie";
   return w === store.me ? 'You won 🏆' : `${nameOf(w)} won`;
@@ -43,10 +46,13 @@ export function list() {
     ${turnOf(g) === store.me ? '<span class="dot"></span>' : ''}<span class="chev">›</span></a>`;
   return {
     html: `${header('Play')}
-      <div class="card score">
-        <div><b style="color:var(--me)">${sb[store.me]}</b><span class="who">${meName()}</span></div>
-        <div class="muted bold">wins</div>
-        <div><b style="color:var(--them)">${sb[store.partnerId]}</b><span class="who">${themName()}</span></div>
+      <div class="card">
+        <div class="score">
+          <div><b style="color:var(--me)">${sb[store.me]}</b><span class="who">${meName()}</span></div>
+          <div class="muted bold">wins</div>
+          <div><b style="color:var(--them)">${sb[store.partnerId]}</b><span class="who">${themName()}</span></div>
+        </div>
+        <div class="score-sub">${sb.team ? `🤝 ${sb.team} drawing${sb.team === 1 ? '' : 's'} guessed together` : '🤝 Draw & Guess counts as team wins'}${sb.draws ? ` · ${sb.draws} tie${sb.draws === 1 ? '' : 's'}` : ''} · ${sb.played} played</div>
       </div>
       <div class="section-title">New game</div>
       <div class="new-games">${['hunt', 'wyr', 'draw', 'word', 'ttt', 'c4', 'dots'].map((t) => `<button class="new-game ${t === 'hunt' ? 'feature' : ''}" data-act="newGame" data-t="${t}"><span class="e">${GAME_EMOJI[t]}</span>${GAME_NAMES[t]}</button>`).join('')}</div>

@@ -6,10 +6,11 @@ export const CONFIG = {
   VAPID_PUBLIC_KEY: 'BGBDmmWpcwW-HQIahVOtkNfulGaJpOdCkZXJy_0IYAlZEaJm-J3JX_Dgf-gjiT7Agys6g8bLhbtJFVBmGoYpq-c',
 };
 
-export const APP_VERSION = '1.3.6';
-export const APP_BUILD = '20261112232855';
+export const APP_VERSION = '1.3.7';
+export const APP_BUILD = '20261112233706';
 
 export const WHATS_NEW = [
+  { v: '1.3.7', date: '2026-11-12', notes: ['Scoreboard fixed: Would you rather now counts as a win for whoever guessed the other better (your past games count too)', 'Draw & Guess counts as team wins'] },
   { v: '1.3.6', date: '2026-11-12', notes: ['Draw & Guess: category hint, letter blanks, a letter revealed after each wrong guess, 🔥 when you are close, 5 guesses, and the artist can add a clue', 'Taps can no longer be spammed (same tap once every 3 minutes)'] },
   { v: '1.3.5', date: '2026-11-12', notes: ["Daily snap has its own camera: your selfie comes out exactly like the preview, no more flipping"] },
   { v: '1.3.4', date: '2026-11-12', notes: ['Daily snap: preview your photo first and tap ↔️ Flip if it is mirrored (it remembers your choice)', 'You can also flip a snap after sending it'] },

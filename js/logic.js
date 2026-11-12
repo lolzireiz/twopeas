@@ -235,12 +235,28 @@ export function myTurnGames() {
   return store.all('game').filter((g) => turnOf(g) === store.me);
 }
 
+// Who won a game. Would you rather goes to whoever guessed the other's picks better.
+export function gameWinner(g) {
+  const d = g.data;
+  if (d.type === 'wyr') {
+    if (!d.done) return null;
+    const a = wyrPicks(g, store.me);
+    const b = wyrPicks(g, store.partnerId);
+    const iKnow = wyrGuesses(g, store.me).filter((x, i) => x === b[i]).length;
+    const theyKnow = wyrGuesses(g, store.partnerId).filter((x, i) => x === a[i]).length;
+    return iKnow > theyKnow ? store.me : theyKnow > iKnow ? store.partnerId : 'draw';
+  }
+  return d.winner || null;
+}
+
 export function scoreboard() {
-  const s = { [store.me]: 0, [store.partnerId]: 0, draws: 0 };
+  const s = { [store.me]: 0, [store.partnerId]: 0, draws: 0, team: 0, played: 0 };
   for (const g of store.all('game')) {
-    const w = g.data.winner;
+    const w = gameWinner(g);
     if (!w) continue;
+    s.played++;
     if (w === 'draw') s.draws++;
+    else if (w === 'team') s.team++;
     else if (s[w] != null) s[w]++;
   }
   return s;

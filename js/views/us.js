@@ -59,7 +59,7 @@ export function hub() {
           <div><div class="bold" style="font-size:26px">🔥 ${dqStreak()}</div><div class="small muted bold">question streak</div></div>
           <div><div class="bold" style="font-size:26px">✅ ${checkinStreak()}</div><div class="small muted bold">days in a row together</div></div>
           <div><div class="bold" style="font-size:26px">${answered}</div><div class="small muted bold">questions answered</div></div>
-          <div><div class="bold" style="font-size:26px">${sb[store.me] + sb[store.partnerId] + sb.draws}</div><div class="small muted bold">games finished</div></div>
+          <div><div class="bold" style="font-size:26px">${sb.played}</div><div class="small muted bold">games finished</div></div>
         </div>
       </div>`,
   };
