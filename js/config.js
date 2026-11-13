@@ -6,10 +6,11 @@ export const CONFIG = {
   VAPID_PUBLIC_KEY: 'BGBDmmWpcwW-HQIahVOtkNfulGaJpOdCkZXJy_0IYAlZEaJm-J3JX_Dgf-gjiT7Agys6g8bLhbtJFVBmGoYpq-c',
 };
 
-export const APP_VERSION = '1.4.0';
-export const APP_BUILD = '20261113034334';
+export const APP_VERSION = '1.4.1';
+export const APP_BUILD = '20261113034836';
 
 export const WHATS_NEW = [
+  { v: '1.4.1', date: '2026-11-12', notes: ['Swipe & match: no more pop-up on every match. Matches collect quietly on the 💞 button', "You never see what your person picked before you swipe, and your deck order doesn't depend on their picks"] },
   { v: '1.4.0', date: '2026-11-12', notes: [
     'Dark mode, 10 themes, background patterns, fonts and text sizes (Settings, Look & feel)',
     'Peadle: the same 5-letter word for both of you every day, with head-to-head stats',

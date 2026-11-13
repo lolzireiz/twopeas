@@ -48,37 +48,25 @@ const doneId = (deck, key) => `swd-${deck}-${key}`;
 
 const hideUnsafe = () => lsGet('twopeas-hide-unsafe', true);
 
-// Your deck, in your order. Things your person liked come up sooner (we don't say which).
+// Your deck, in your own order.
 function queue(deck, filter) {
   const mine = swipesOf(deck, store.me);
-  const theirs = swipesOf(deck, store.partnerId);
   let cards = cardsOf(deck).filter((c) => mine.v[c.key] == null);
   if (filter && filter !== 'all') {
     cards = filter === 'safe' ? cards.filter((c) => !c.food || ['ok', 'note'].includes(checkBoth(c.food).level))
       : cards.filter((c) => c.tags?.includes(filter));
   }
   if (DECKS[deck].food && hideUnsafe()) cards = cards.filter((c) => !c.food || checkBoth(c.food).level !== 'avoid');
+  // A plain shuffle. Nothing about what your person picked changes your order.
   const order = seededShuffle(cards, `${store.me}-${deck}`);
-  const superd = order.filter((c) => theirs.v[c.key] === 2);
-  const liked = order.filter((c) => theirs.v[c.key] === 1);
-  const rest = order.filter((c) => !yes(theirs.v[c.key]));
-  rest.sort((a, b) => loveScore(b.food) - loveScore(a.food));
-  const out = [...superd];
-  while (liked.length || rest.length) {
-    if (liked.length) out.push(liked.shift());
-    if (rest.length) out.push(rest.shift());
-    if (rest.length) out.push(rest.shift());
-  }
-  return out;
+  return order.sort((a, b) => loveScore(b.food) - loveScore(a.food));
 }
 
 export function deckProgress(deck) {
   const all = cardsOf(deck);
   const mine = swipesOf(deck, store.me);
   const left = all.filter((c) => mine.v[c.key] == null).length;
-  const theirs = swipesOf(deck, store.partnerId);
-  const superWaiting = all.filter((c) => theirs.v[c.key] === 2 && mine.v[c.key] == null).length;
-  return { total: all.length, left, matches: matchesOf(deck).length, superWaiting };
+  return { total: all.length, left, matches: matchesOf(deck).length };
 }
 
 // ---------- Safety badges ----------
@@ -109,9 +97,9 @@ export function hub() {
         const p = deckProgress(id);
         return `<a class="deck-tile" href="#/swipe/${id}"><span class="e">${d.e}</span><b>${d.name}</b><span class="small muted">${d.blurb}</span>
           <div class="deck-meta">${p.left ? `${p.left} left` : p.total ? 'All swiped ✓' : 'Add some cards'}${p.matches ? ` · 💞 ${p.matches}` : ''}</div>
-          ${p.superWaiting ? `<span class="deck-hot">⭐ ${p.superWaiting}</span>` : ''}</a>`;
+</a>`;
       }).join('')}</div>
-      <p class="tiny muted center" style="margin-top:12px">⭐ means ${themName()} super-liked something you haven't seen yet.</p>`,
+      <p class="tiny muted center" style="margin-top:12px">You never see what ${themName()} picked until you've both swiped. Matches collect quietly in 💞.</p>`,
   };
 }
 
@@ -135,7 +123,6 @@ export function deck({ deck: id }) {
   const top = q.slice(0, 3);
   const cardHtml = (c, i) => `<div class="sw-card ${i === 0 ? 'top' : ''}" data-key="${esc(c.key)}" style="--n:${i}">
       <div class="sw-stamp like">LIKE</div><div class="sw-stamp nope">NOPE</div><div class="sw-stamp super">SUPER ⭐</div>
-      ${theirs.v[c.key] === 2 ? `<div class="sw-super">⭐ ${themName()} super-liked this</div>` : ''}
       <div class="sw-e">${c.e}</div>
       <h2>${esc(c.title)}</h2>
       <p class="muted bold small">${esc(c.sub || '')}</p>
@@ -146,7 +133,7 @@ export function deck({ deck: id }) {
     tabs: false,
     live: false,
     onChange: () => !busy && !document.querySelector('.sw-card.top[style*="translate"]'),
-    html: `${header(`${d.e} ${d.name}`, { back: '#/swipe', sub: `${p.left} left · 💞 ${p.matches} match${p.matches === 1 ? '' : 'es'}`, right: '<a class="icon-btn" href="#/matches" aria-label="Matches">💞</a>' })}
+    html: `${header(`${d.e} ${d.name}`, { back: '#/swipe', sub: `${p.left} left · 💞 ${p.matches} match${p.matches === 1 ? '' : 'es'}`, right: `<a class="icon-btn sw-match-btn" href="#/matches" aria-label="Matches">💞${p.matches ? `<span class="sw-mcount">${p.matches}</span>` : ''}</a>` })}
       ${chips.length > 1 ? `<div class="chip-scroll">${chips.map(([k, l]) => `<button class="chip ${f === k ? 'on' : ''}" data-act="filter" data-f="${k}">${l}</button>`).join('')}</div>` : ''}
       <div class="sw-stack">${top.length ? top.map(cardHtml).reverse().join('') : `<div class="sw-empty">${empty('🎉', p.left ? 'Nothing left with this filter.' : `You've swiped the whole deck! ${p.matches ? `You two matched on ${p.matches}.` : ''}`)}
         <div class="sp"></div><button class="btn ghost block" data-act="add">+ Add your own card</button><div class="sp"></div>
@@ -245,27 +232,19 @@ async function commit(deckId, key, val) {
   await store.set(swId(deckId, store.me), 'swipes', { v, t });
   const theirs = swipesOf(deckId, store.partnerId);
   if (yes(val) && yes(theirs.v[key])) {
-    const c = findCard(deckId, key);
-    celebrate(deckId, c, val === 2 || theirs.v[key] === 2);
     award(10, 'match', `match-${deckId}-${key}`);
-    store.notify('special', `It's a match! ${c?.e || '💞'} ${c?.title || ''}`, `You both said yes in ${DECKS[deckId].name}`, '#/matches');
+    bumpMatches();
   }
   bus.rerender();
 }
 
-function celebrate(deckId, c, sup) {
-  if (!c) return;
-  confetti(sup ? 120 : 70);
-  sheet({
-    body: `<div class="center match-pop"><div class="match-title">It's a match!</div><div style="font-size:64px;margin:6px 0">${c.e}</div>
-      <h2>${esc(c.title)}</h2><p class="small muted">${sup ? 'And somebody super-liked it ⭐' : `You and ${themName()} both said yes`}</p>
-      ${c.food ? `<div class="sp"></div>${safety(c.food)}` : ''}
-      <div class="sp2"></div><button class="btn block" data-plan>📅 Plan it</button><div class="sp"></div><button class="btn ghost block" data-close>Keep swiping</button></div>`,
-    onMount: (el, close) => {
-      el.querySelector('[data-close]').onclick = close;
-      el.querySelector('[data-plan]').onclick = async () => { close(); const { planSheet } = await import('./us.js'); planSheet(c.title); };
-    },
-  });
+// A quiet little bump on the 💞 button instead of a pop-up, so you can keep swiping.
+function bumpMatches() {
+  const b = document.querySelector('.sw-match-btn');
+  if (!b) return;
+  b.classList.remove('bump');
+  void b.offsetWidth;
+  b.classList.add('bump');
 }
 
 // ---------- Add a card ----------
