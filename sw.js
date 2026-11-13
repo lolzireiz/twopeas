@@ -1,5 +1,5 @@
 // Two Peas service worker: offline cache + push notifications.
-const CACHE = 'twopeas-1.4.3';
+const CACHE = 'twopeas-1.4.4';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.js', './js/config.js', './js/store.js', './js/logic.js', './js/content.js', './js/util.js', './js/ui.js',

@@ -534,13 +534,13 @@ html[data-mode="dark"] .kb button:not(.g):not(.y):not(.x) { background: var(--ke
 html[data-mode="dark"] .pill.me { color: color-mix(in srgb, var(--me) 55%, #fff); }
 html[data-mode="dark"] .pill.them { color: color-mix(in srgb, var(--them) 55%, #fff); }
 html[data-mode="dark"] .btn.ghost { background: var(--soft); }
-html[data-mode="dark"] .toast { background: rgba(250, 245, 240, .96); color: #2b2621; }
+html[data-mode="dark"] .toast { background: color-mix(in srgb, var(--card) 82%, #fff); color: var(--ink); box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 10px 30px rgba(0,0,0,.5); }
 html[data-mode="dark"] .sheet-back.in { background: rgba(0, 0, 0, .55); }
 html[data-mode="dark"] .presence { color: #7fdc6c; }
 html[data-mode="dark"] input, html[data-mode="dark"] textarea, html[data-mode="dark"] select { background: var(--soft); }
 html[data-mode="dark"] .c4 { background: #2e5878; }
 html[data-mode="dark"] .c4 button:not([style*="background"]) { background: var(--bg); }
-html[data-mode="dark"] .room-wrap, html[data-mode="dark"] .pet-stage { filter: brightness(.86) saturate(.95); }
+html[data-mode="dark"] svg.room { filter: brightness(.66) saturate(.9); }
 html.calm *, html.calm *::before, html.calm *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 
 /* ---------- Look picker ---------- */
@@ -757,3 +757,7 @@ body.wr-open { overflow: hidden; }
 .sw-card[style*="--n:2"] { animation: swin .35s both; } @keyframes swin { from { opacity: 0; } }
 
 html[data-mode="dark"] .upd-bar, html[data-mode="dark"] .rec { box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.5); }
+
+html[data-mode="dark"] .new-game.feature { background: linear-gradient(135deg, color-mix(in srgb, #7cb66b 30%, var(--card)), color-mix(in srgb, #6fb3e3 30%, var(--card))); }
+html[data-mode="dark"] .spinner { background: linear-gradient(135deg, var(--me-soft), var(--them-soft)); }
+html[data-mode="dark"] .level-bar i { filter: saturate(.9); }

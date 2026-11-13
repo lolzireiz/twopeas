@@ -102,7 +102,7 @@ function auth() {
       <h1>Two Peas</h1>
       <p class="lead">${up ? 'Make your account. You only do this once on each phone.' : 'Welcome back!'}</p>
       <div class="seg"><button data-act="mode" data-m="signup" class="${up ? 'on' : ''}">New here</button><button data-act="mode" data-m="signin" class="${up ? '' : 'on'}">Sign in</button></div>
-      ${ob.err ? `<div class="card flat small" style="background:#fff3e0">${ob.err}</div>` : ''}
+      ${ob.err ? `<div class="card flat small" style="background:var(--warn-soft)">${ob.err}</div>` : ''}
       <form data-form="auth">
         <label class="field">Email</label>
         <input type="email" name="email" autocomplete="email" required>
