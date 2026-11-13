@@ -1,5 +1,5 @@
 import { store } from '../store.js';
-import { SHOP, SLOTS, OUTFIT_SLOTS, ROOM_SLOTS, SPECIES, PET_LINES } from '../content.js';
+import { SHOP, SLOTS, OUTFIT_SLOTS, ROOM_SLOTS, SLOT_DEFAULT, SPECIES, PET_LINES } from '../content.js';
 import { roomWithPet, itemPreview, petSVG } from '../pet.js';
 import { totals, stageOf, STAGE_NAMES, petState, petMoodText, owned, bestStreak } from '../logic.js';
 import { header, themName } from '../ui.js';
@@ -7,6 +7,7 @@ import { esc, sheet, toast, confetti, confirmSheet } from '../util.js';
 import { feedRow, feedPet, petTap, afterFeed, playToy, sendVisit } from '../feed.js';
 
 let tab = 'outfits';
+let shopFilter = 'all';
 const myName = () => store.mine.name || 'Your person';
 
 export function view() {
@@ -23,6 +24,7 @@ export function view() {
     ${item.id === 'none' ? '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="22" fill="none" stroke="#d9cdbf" stroke-width="5"/><path d="M34 66 L66 34" stroke="#d9cdbf" stroke-width="5"/></svg>' : itemPreview(item, pet.species)}
     <span class="nm">${esc(item.name)}</span>
     ${tab === 'shop' ? `<span class="pr">${item.unlock ? `🔒 ${item.unlock.streak}-day streak` : `🪙 ${item.cost}`}</span>` : ''}
+    ${tab === 'shop' && item.tag === 'new' ? '<span class="tagn">NEW</span>' : ''}${tab === 'shop' && item.tag === 'holiday' ? '<span class="tagn hol">🎄</span>' : ''}
   </button>`;
 
   let body = '';
@@ -31,21 +33,24 @@ export function view() {
     const worn = tab === 'outfits' ? c.outfit || {} : c.room || {};
     body = slots.map((slot) => {
       const mine = SHOP.filter((i) => i.slot === slot && have.has(i.id));
-      const def = { rug: 'Plain rug', frame: 'Pea picture', wall: 'Cozy cream' }[slot];
+      const def = SLOT_DEFAULT[slot];
       const noneItem = { id: 'none', slot, name: def || 'None' };
       return `<div class="section-title">${SLOTS[slot]}</div>
         <div class="shop-grid">${card(noneItem, !worn[slot])}${mine.map((i) => card(i, worn[slot] === i.id)).join('')}
         ${mine.length ? '' : `<button class="shop-item" data-act="tab" data-t="shop" style="justify-content:center;min-height:120px"><span class="nm muted">Find more in the shop</span></button>`}</div>`;
     }).join('');
   } else {
-    const groups = [...OUTFIT_SLOTS, ...ROOM_SLOTS];
-    body = `<div class="card flat small"><b>How to earn love points</b><br>
-      <span class="muted">Every 10 points also makes a snack for your pet. Daily question together +20 · Weekly challenge +50 · Bucket list or date +30 · Finish a game +15 (winner +5) · Memory or drawing +10 · Notes, taps, moods +5 (5 a day)</span></div>` +
+    const groups = shopFilter === 'outfits' ? OUTFIT_SLOTS : shopFilter === 'room' ? ROOM_SLOTS : [...OUTFIT_SLOTS, ...ROOM_SLOTS];
+    const keep = (i) => (shopFilter === 'new' ? i.tag === 'new' : shopFilter === 'holiday' ? i.tag === 'holiday' : shopFilter === 'cheap' ? !i.unlock && i.cost <= t.wallet : true);
+    const chips = [['all', 'All'], ['outfits', '👒 Outfits'], ['room', '🛋️ Room'], ['new', '✨ New'], ['holiday', '🎄 Holiday'], ['cheap', '🪙 Can afford']];
+    body = `<div class="chip-scroll">${chips.map(([k, l]) => `<button class="chip ${shopFilter === k ? 'on' : ''}" data-act="sf" data-f="${k}">${l}</button>`).join('')}</div>
+      <div class="card flat small"><b>Tap anything to try it on first.</b><br>
+      <span class="muted">Love points come from doing things together. Every 10 also makes a snack. Daily question together +20 · Weekly challenge +50 · Date or bucket list +30 · Games +15 · Peadle up to +16 · Matches +10 · Habits +2 each</span></div>` +
       groups.map((slot) => {
-        const items = SHOP.filter((i) => i.slot === slot && !have.has(i.id));
+        const items = SHOP.filter((i) => i.slot === slot && !have.has(i.id) && keep(i)).sort((a, b) => (a.unlock ? 1 : 0) - (b.unlock ? 1 : 0) || a.cost - b.cost);
         if (!items.length) return '';
         return `<div class="section-title">${SLOTS[slot]}</div><div class="shop-grid">${items.map((i) => card(i, false, i.unlock && best < i.unlock.streak ? 'locked' : '')).join('')}</div>`;
-      }).join('') || '<div class="empty"><div class="e">🛍️</div>You own everything! Show-offs.</div>';
+      }).join('') || '<div class="empty"><div class="e">🛍️</div>Nothing here right now.</div>';
   }
 
   return {
@@ -72,6 +77,7 @@ export function view() {
     mount: (root) => afterFeed(root),
     actions: {
       tab: (d) => { tab = d.t; return true; },
+      sf: (d) => { shopFilter = d.f; return true; },
       petPet: (d, el, e) => petTap(el, e),
       feed: (d, el) => feedPet(el),
       toy: (d, el) => playToy(el),
@@ -81,25 +87,41 @@ export function view() {
         await store.update('couple', (cd) => ({ ...cd, [key]: { ...(cd[key] || {}), [d.slot]: d.id === 'none' ? null : d.id } }));
         return true;
       },
-      locked: (d) => {
-        const it = SHOP.find((i) => i.id === d.id);
-        toast(`🔒 Unlocks with a ${it.unlock.streak}-day streak. You're at ${best}.`);
-      },
-      buy: async (d) => {
-        const it = SHOP.find((i) => i.id === d.id);
-        if (!it.unlock && t.wallet < it.cost) { toast(`You need ${it.cost - t.wallet} more love points`); return; }
-        if (!it.unlock && !(await confirmSheet(`Buy ${esc(it.name)}?`, `${it.cost} love points from your shared wallet.`, `Buy for 🪙 ${it.cost}`))) return;
-        if (!it.unlock) await store.add('purchase', { item: it.id, cost: it.cost });
-        const key = OUTFIT_SLOTS.includes(it.slot) ? 'outfit' : 'room';
-        await store.update('couple', (cd) => ({ ...cd, [key]: { ...(cd[key] || {}), [it.slot]: it.id } }));
-        confetti(50);
-        store.notify('pet', `🛍️ ${myName()} got ${it.name} for ${pet.name}`, 'Go see how it looks!', '#/pet');
-        tab = OUTFIT_SLOTS.includes(it.slot) ? 'outfits' : 'room';
-        return true;
-      },
+      locked: (d) => tryOn(SHOP.find((i) => i.id === d.id), pet, stage, t, best),
+      buy: (d) => tryOn(SHOP.find((i) => i.id === d.id), pet, stage, t, best),
       edit: () => editPet(pet),
     },
   };
+}
+
+// Try it on before buying.
+function tryOn(it, pet, stage, t, best) {
+  const c = store.couple;
+  const isOutfit = OUTFIT_SLOTS.includes(it.slot);
+  const outfit = { ...(c.outfit || {}), ...(isOutfit ? { [it.slot]: it.id } : {}) };
+  const room = { ...(c.room || {}), ...(!isOutfit ? { [it.slot]: it.id } : {}) };
+  const can = it.unlock ? best >= it.unlock.streak : t.wallet >= it.cost;
+  sheet({
+    body: `<div class="tryon">${isOutfit ? `<div class="tryon-pet">${petSVG({ species: pet.species, mood: 'love', stage, outfit })}</div>` : roomWithPet(room, { species: pet.species, mood: 'love', stage, outfit: c.outfit || {} })}</div>
+      <div class="center" style="margin-top:10px"><h2>${esc(it.name)}${it.tag === 'holiday' ? ' 🎄' : ''}</h2>
+      <p class="small muted bold">${SLOTS[it.slot]} · ${it.unlock ? `Unlocks with a ${it.unlock.streak}-day streak (you're at ${best})` : `🪙 ${it.cost} · you have ${t.wallet.toLocaleString()}`}</p></div>
+      <div class="sp"></div>
+      <button class="btn block" data-buy ${can ? '' : 'disabled'}>${it.unlock ? (can ? 'Claim it ✨' : `🔒 ${it.unlock.streak - best} more day${it.unlock.streak - best === 1 ? '' : 's'}`) : can ? `Buy for 🪙 ${it.cost}` : `Need ${it.cost - t.wallet} more points`}</button>
+      <div class="sp"></div><button class="btn ghost block" data-close>Maybe later</button>`,
+    onMount: (el, close) => {
+      el.querySelector('[data-close]').onclick = close;
+      el.querySelector('[data-buy]').onclick = async () => {
+        close();
+        if (!it.unlock) await store.add('purchase', { item: it.id, cost: it.cost });
+        const key = isOutfit ? 'outfit' : 'room';
+        await store.update('couple', (cd) => ({ ...cd, [key]: { ...(cd[key] || {}), [it.slot]: it.id } }));
+        confetti(60);
+        store.notify('pet', `🛍️ ${myName()} got ${it.name} for ${pet.name}`, 'Go see how it looks!', '#/pet');
+        tab = isOutfit ? 'outfits' : 'room';
+        import('../bus.js').then(({ bus }) => bus.rerender());
+      };
+    },
+  });
 }
 
 function editPet(pet) {

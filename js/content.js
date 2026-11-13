@@ -472,47 +472,12 @@ export const SPECIES = {
   bunny: { name: 'Bunny' },
   frog: { name: 'Frog' },
   duck: { name: 'Duck' },
+  fox: { name: 'Fox' },
+  panda: { name: 'Panda' },
+  penguin: { name: 'Penguin' },
 };
 
-// Shop: slot decides where it goes. unlock = earned, not bought.
-export const SHOP = [
-  { id: 'hat-party', slot: 'head', name: 'Party hat', cost: 40 },
-  { id: 'hat-bow', slot: 'head', name: 'Big bow', cost: 50 },
-  { id: 'hat-beanie', slot: 'head', name: 'Cozy beanie', cost: 60 },
-  { id: 'hat-chef', slot: 'head', name: 'Chef hat', cost: 80 },
-  { id: 'hat-flower', slot: 'head', name: 'Flower crown', cost: 90 },
-  { id: 'hat-crown', slot: 'head', name: 'Little crown', cost: 200 },
-  { id: 'hat-halo', slot: 'head', name: 'Halo', cost: 0, unlock: { streak: 7 } },
-  { id: 'face-glasses', slot: 'face', name: 'Round glasses', cost: 50 },
-  { id: 'face-hearts', slot: 'face', name: 'Heart shades', cost: 90 },
-  { id: 'neck-bowtie', slot: 'neck', name: 'Bow tie', cost: 40 },
-  { id: 'neck-bandana', slot: 'neck', name: 'Bandana', cost: 50 },
-  { id: 'neck-scarf', slot: 'neck', name: 'Knit scarf', cost: 60 },
-  { id: 'wall-stripes', slot: 'wall', name: 'Pink stripes', cost: 60 },
-  { id: 'wall-dots', slot: 'wall', name: 'Mint dots', cost: 60 },
-  { id: 'wall-hearts', slot: 'wall', name: 'Lavender hearts', cost: 120 },
-  { id: 'wall-stars', slot: 'wall', name: 'Starry night', cost: 150 },
-  { id: 'rug-heart', slot: 'rug', name: 'Heart rug', cost: 80 },
-  { id: 'rug-rainbow', slot: 'rug', name: 'Rainbow rug', cost: 120 },
-  { id: 'rug-gold', slot: 'rug', name: 'Golden rug', cost: 0, unlock: { streak: 100 } },
-  { id: 'bed-basket', slot: 'bed', name: 'Basket bed', cost: 70 },
-  { id: 'bed-cloud', slot: 'bed', name: 'Cloud bed', cost: 150 },
-  { id: 'plant-pot', slot: 'plant', name: 'Little sprout', cost: 40 },
-  { id: 'plant-cactus', slot: 'plant', name: 'Cactus', cost: 50 },
-  { id: 'plant-monstera', slot: 'plant', name: 'Big leafy plant', cost: 90 },
-  { id: 'lamp-mushroom', slot: 'lamp', name: 'Mushroom lamp', cost: 80 },
-  { id: 'lamp-moon', slot: 'lamp', name: 'Moon lamp', cost: 120 },
-  { id: 'window-day', slot: 'window', name: 'Sunny window', cost: 60 },
-  { id: 'frame-heart', slot: 'frame', name: 'Heart picture', cost: 70 },
-  { id: 'frame-gold', slot: 'frame', name: 'Golden frame', cost: 0, unlock: { streak: 30 } },
-  { id: 'lights-fairy', slot: 'lights', name: 'Fairy lights', cost: 100 },
-];
-export const SLOTS = {
-  head: 'Hats', face: 'Glasses', neck: 'Neckwear',
-  wall: 'Wallpaper', rug: 'Rug', bed: 'Bed', plant: 'Plant', lamp: 'Lamp', window: 'Window', frame: 'Wall art', lights: 'Lights',
-};
-export const OUTFIT_SLOTS = ['head', 'face', 'neck'];
-export const ROOM_SLOTS = ['wall', 'rug', 'bed', 'plant', 'lamp', 'window', 'frame', 'lights'];
+export { SHOP, SLOTS, OUTFIT_SLOTS, ROOM_SLOTS, SLOT_DEFAULT } from './shop-items.js';
 
 export const PET_LINES = [
   'I love you two so much!',

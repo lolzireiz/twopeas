@@ -6,10 +6,17 @@ export const CONFIG = {
   VAPID_PUBLIC_KEY: 'BGBDmmWpcwW-HQIahVOtkNfulGaJpOdCkZXJy_0IYAlZEaJm-J3JX_Dgf-gjiT7Agys6g8bLhbtJFVBmGoYpq-c',
 };
 
-export const APP_VERSION = '1.4.4';
-export const APP_BUILD = '20261113042030';
+export const APP_VERSION = '1.5.0';
+export const APP_BUILD = '20261113043546';
 
 export const WHATS_NEW = [
+  { v: '1.5.0', date: '2026-11-12', notes: [
+    'Pets got a glow-up: softer shading, sparkly eyes, little feet, blinking, breathing and tail wags',
+    'Three new pets: fox, panda and penguin',
+    "The room's window shows the real time of day and today's weather, with sunbeams by day and cozy glows at night",
+    '143 things in the shop (100+ new), with new spots: floors, shelves, hanging decor, plushies, toys, bowls and things worn on the back',
+    'Holiday items are in 🎄 and you can try anything on before you buy it',
+  ] },
   { v: '1.4.4', date: '2026-11-12', notes: ['Dark mode pass on every screen: the Word Hunt button, pop-up messages, the pet room and the setup screens all go dark now'] },
   { v: '1.4.3', date: '2026-11-12', notes: ['The update banner and voice-note recorder now match your theme in dark mode'] },
   { v: '1.4.2', date: '2026-11-12', notes: ['Swipe & match: the card underneath is now always the next one, and it slides forward smoothly'] },

@@ -761,3 +761,54 @@ html[data-mode="dark"] .upd-bar, html[data-mode="dark"] .rec { box-shadow: 0 0 0
 html[data-mode="dark"] .new-game.feature { background: linear-gradient(135deg, color-mix(in srgb, #7cb66b 30%, var(--card)), color-mix(in srgb, #6fb3e3 30%, var(--card))); }
 html[data-mode="dark"] .spinner { background: linear-gradient(135deg, var(--me-soft), var(--them-soft)); }
 html[data-mode="dark"] .level-bar i { filter: saturate(.9); }
+
+/* ---------- Pet & room life ---------- */
+.shop-item { position: relative; }
+.tagn { position: absolute; top: 6px; right: 6px; font-size: 9.5px; font-weight: 900; background: var(--pea); color: #fff; padding: 2px 6px; border-radius: 99px; }
+.tagn.hol { background: transparent; font-size: 13px; padding: 0; }
+.tryon { border-radius: 20px; overflow: hidden; background: var(--soft); }
+.tryon-pet { width: 220px; margin: 0 auto; padding: 10px 0; }
+.tryon .room { border-radius: 20px; }
+.pet-eyes { animation: blink 5.2s infinite; }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.12); } }
+.pet-breathe { animation: breathe 3.6s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(1.012, .985); } }
+.pet-tail { animation: wag 2.6s ease-in-out infinite; }
+@keyframes wag { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(-8deg); } 80% { transform: rotate(6deg); } 90% { transform: rotate(-4deg); } }
+.pet-ear-l { animation: twitchL 7s infinite; } .pet-ear-r { animation: twitchR 7s infinite 1.3s; }
+@keyframes twitchL { 0%, 90%, 100% { transform: rotate(0); } 93% { transform: rotate(-8deg); } 96% { transform: rotate(3deg); } }
+@keyframes twitchR { 0%, 90%, 100% { transform: rotate(0); } 93% { transform: rotate(8deg); } 96% { transform: rotate(-3deg); } }
+.pet-wing-l { animation: flapL 4s infinite; } .pet-wing-r { animation: flapR 4s infinite; }
+@keyframes flapL { 0%, 84%, 100% { transform: rotate(0); } 88%, 96% { transform: rotate(14deg); } 92% { transform: rotate(-4deg); } }
+@keyframes flapR { 0%, 84%, 100% { transform: rotate(0); } 88%, 96% { transform: rotate(-14deg); } 92% { transform: rotate(4deg); } }
+.pet-flap { animation: wings 2.4s ease-in-out infinite; }
+@keyframes wings { 50% { transform: scale(1.04, .97) translateY(-2px); } }
+.pet-balloon { animation: bal 3s ease-in-out infinite; }
+@keyframes bal { 50% { transform: rotate(4deg) translateY(-3px); } }
+.pet-prop { animation: prop 1.2s linear infinite; }
+@keyframes prop { 50% { transform: scaleX(-1); } }
+.room .twinkle { animation: twinkle 2.4s ease-in-out infinite; }
+@keyframes twinkle { 50% { opacity: .25; } }
+.room .drift { animation: drift 18s ease-in-out infinite alternate; }
+@keyframes drift { to { transform: translateX(14px); } }
+.room .rain { animation: rain .7s linear infinite; }
+@keyframes rain { from { transform: translateY(-12px); } to { transform: translateY(14px); } }
+.room .snow { animation: snow 4s linear infinite; }
+@keyframes snow { from { transform: translate(0, -20px); } to { transform: translate(6px, 24px); } }
+.room .mote { animation: mote 6s ease-in-out infinite; opacity: 0; }
+@keyframes mote { 20%, 70% { opacity: .7; } 100% { transform: translate(14px, -26px); opacity: 0; } }
+.room .sway { animation: sway 4s ease-in-out infinite; }
+@keyframes sway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+.room .spin-slow { animation: spinslow 8s linear infinite; }
+@keyframes spinslow { to { transform: rotate(360deg); } }
+.room .lava ellipse { animation: lava 5s ease-in-out infinite alternate; }
+.room .lava ellipse:nth-child(2) { animation-delay: -2.5s; }
+@keyframes lava { to { transform: translateY(-12px); } }
+.room .flicker { animation: flicker .9s ease-in-out infinite alternate; }
+@keyframes flicker { to { transform: scale(.85, 1.1); } }
+.room .fish { animation: fish 5s ease-in-out infinite alternate; }
+@keyframes fish { to { transform: translateX(-8px); } }
+.room .note-float { animation: notes 3s ease-in-out infinite; }
+@keyframes notes { 50% { transform: translateY(-6px); opacity: .3; } }
+.room .glow { animation: twinkle 3s ease-in-out infinite; }
+html.calm .pet-eyes, html.calm .pet-breathe, html.calm .pet-tail { animation: none; }
