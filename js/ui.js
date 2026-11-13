@@ -2,6 +2,7 @@
 import { store } from './store.js';
 import { colorOf } from './content.js';
 import { esc } from './util.js';
+import { isDark, setAccentOverride } from './theme.js';
 
 const BACK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>';
 
@@ -27,11 +28,15 @@ export function applyColors() {
   const r = document.documentElement.style;
   const m = meColor();
   const t = themColor();
+  const dark = isDark();
+  const soft = (c) => (dark ? `color-mix(in srgb, ${c.hex} 24%, var(--card))` : c.soft);
   r.setProperty('--me', m.hex);
-  r.setProperty('--me-soft', m.soft);
+  r.setProperty('--me-soft', soft(m));
   r.setProperty('--them', t.hex);
-  r.setProperty('--them-soft', t.soft);
+  r.setProperty('--them-soft', soft(t));
+  if (lastAccent !== m.hex) { lastAccent = m.hex; setAccentOverride(m.hex); }
 }
+let lastAccent = null;
 
 export function photoImg(ref, cls = '', alt = '') {
   if (!ref) return '';

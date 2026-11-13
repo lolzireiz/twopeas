@@ -122,7 +122,7 @@ async function scheduleCouple(cid: string) {
   const { data: mems } = await db.from('members').select('user_id').eq('couple_id', cid);
   if (!mems || mems.length < 2) return 0;
   const { data: rows } = await db.from('items').select('id, kind, data, created_by, created_at, updated_at')
-    .eq('couple_id', cid).in('kind', ['profile', 'couple', 'dqa', 'letter', 'countdown', 'memory', 'plan', 'snap']).limit(5000);
+    .eq('couple_id', cid).in('kind', ['profile', 'couple', 'dqa', 'letter', 'countdown', 'memory', 'plan', 'snap', 'habit', 'hbday']).limit(5000);
   const items = (rows ?? []) as Item[];
   const byId = new Map(items.map((i) => [i.id, i]));
   const couple = byId.get('couple')?.data ?? {};
@@ -187,6 +187,32 @@ async function scheduleCouple(cid: string) {
       if (streak >= 2 && !(answered(me, D) && answered(other, D))) {
         sent += await once(k('streak'), cid, me, { type: 'daily', title: `🔥 Your ${streak}-day streak ends at midnight`, body: "Answer today's question together to keep it", url: '#/dq' });
       }
+    }
+
+    // 8pm: habits still to do today
+    if (t.hour >= 20 && t.hour < 22) {
+      const wd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(t.weekday);
+      const due = items.filter((i) => i.kind === 'habit' && !i.data.archived && (i.data.owner === 'both' || i.data.owner === me)
+        && (!i.data.days?.length || i.data.days.includes(wd)) && i.created_at.slice(0, 10) <= D);
+      const done = new Set(byId.get(`hb-${D}-${me}`)?.data?.done ?? []);
+      const left = due.filter((h) => !done.has(h.id));
+      if (due.length && left.length) {
+        sent += await once(k('habits'), cid, me, {
+          type: 'daily',
+          title: left.length === due.length ? '💪 Still time for your habits today' : `💪 ${left.length} habit${left.length > 1 ? 's' : ''} left today`,
+          body: left.slice(0, 3).map((h) => `${h.data.e ?? ''} ${h.data.title}`).join(' · '),
+          url: '#/habits',
+        });
+      }
+    }
+
+    // Wrapped drops: Monday (week), the 1st (month), New Year's Eve (year)
+    if (t.hour >= 10 && t.hour < 13) {
+      if (t.weekday === 'Mon') sent += await once(k('wr-week'), cid, me, { type: 'special', title: '🎁 Your weekly Wrapped is ready', body: `See what you and ${otherName} got up to last week`, url: '#/wrapped' });
+      if (D.slice(8) === '01') sent += await once(k('wr-month'), cid, me, { type: 'special', title: '🎁 Your monthly Wrapped is here!', body: `Watch it with ${otherName}`, url: '#/wrapped' });
+    }
+    if (md === '12-31' && t.hour >= 12 && t.hour < 16) {
+      sent += await once(k('wr-year'), cid, me, { type: 'special', title: `🎆 ${D.slice(0, 4)} WRAPPED IS HERE`, body: `Your whole year with ${otherName}. Open it together!`, url: `#/wrapped/year/${D.slice(0, 4)}` });
     }
 
     // Pet misses you (once per quiet spell, daytime only)

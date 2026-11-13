@@ -7,6 +7,8 @@ import { header, meName, themName, nameOf, photoImg, empty, whoClass } from '../
 import { bus } from '../bus.js';
 import { STICKERS, earned } from '../stickers.js';
 import { dqaId } from '../logic.js';
+import { allMatches } from './swipe.js';
+import { progress as habitProgress } from '../habits-logic.js';
 import {
   esc, dayKey, fmtDay, fmtTime, sheet, toast, confetti, compressImage, timeAgo, monthName, parseDay, pick, confirmSheet, weekKey, addDays,
 } from '../util.js';
@@ -42,6 +44,11 @@ export function hub() {
         <a class="tile" href="#/countdowns"><span class="e">⏳</span><b>Countdowns</b><span>${cds[0] ? `${esc(cds[0].title)} in ${cds[0].days}d` : 'Add your next big day'}</span></a>
         <a class="tile" href="#/dates"><span class="e">🎡</span><b>Dates</b><span>${bucket.filter((b) => !b.data.done).length} on the bucket list</span></a>
         <a class="tile" href="#/lists"><span class="e">📝</span><b>Lists</b><span>Watch, eat, gift ideas</span></a>
+        <a class="tile" href="#/swipe"><span class="e">💞</span><b>Swipe & match</b><span>${(() => { const n = allMatches().length; return n ? `${n} match${n === 1 ? '' : 'es'}` : 'Dates, food, movies, trips'; })()}</span></a>
+        <a class="tile" href="#/wheel"><span class="e">🎡</span><b>Date wheel</b><span>Let fate decide</span></a>
+        <a class="tile" href="#/habits"><span class="e">💪</span><b>Habits</b><span>${(() => { const h = habitProgress(store.me); return h.due ? `${h.done}/${h.due} today` : 'Little goals together'; })()}</span></a>
+        <a class="tile" href="#/wrapped"><span class="e">🎁</span><b>Wrapped</b><span>Your week, month and year</span></a>
+        <a class="tile" href="#/prefs"><span class="e">📝</span><b>Preferences</b><span>Allergies, faves, cheat sheet</span></a>
         <a class="tile" href="#/lovejar"><span class="e">🫙</span><b>Love jar</b><span>${jarN ? `${jarN} thing${jarN === 1 ? '' : 's'} ${themName()} loves about you` : 'Little things you love about each other'}</span></a>
         <a class="tile" href="#/stickers"><span class="e">🌟</span><b>Sticker book</b><span>${earned().size} of ${STICKERS.length} collected</span></a>
         <a class="tile wide" href="#/challenge"><div class="row gap"><span class="e">🏆</span><div class="grow"><b>This week's challenge</b><br><span>${esc(ch.text)}</span></div><span class="pill ${ch.both ? 'gold' : ''}">${ch.both ? 'Done!' : `${(ch.doneMe ? 1 : 0) + (ch.doneThem ? 1 : 0)}/2`}</span></div></a>
@@ -225,12 +232,8 @@ export function dates() {
   const tabs = [['spin', '🎡 Spin'], ['jar', '🫙 Jar'], ['bucket', '✨ Bucket'], ['plans', '📅 Plans']];
   let body = '';
   if (datesTab === 'spin') {
-    body = `<div class="row wrap gap" style="margin-bottom:12px">${[['any', 'Anything'], ...Object.entries(DATE_CATS)].map(([k, l]) => `<button class="chip ${spinFilter === k ? 'on' : ''}" data-act="filter" data-f="${k}">${l}</button>`).join('')}</div>
-      <div class="spinner" id="spin">${spinResult ? esc(spinResult) : 'Tap spin for a date idea'}</div>
-      <div class="sp"></div>
-      <button class="btn block" data-act="spin">🎲 Spin</button>
-      ${spinResult ? `<div class="sp"></div><div class="row gap"><button class="btn ghost grow" data-act="planIt">📅 Plan it</button><button class="btn ghost grow" data-act="bucketIt">✨ Bucket list</button></div>` : ''}
-      <p class="small muted center" style="margin-top:12px">Ideas from your jar are mixed in too.</p>`;
+    body = `<a class="card wheel-cta" href="#/wheel"><span class="e">🎡</span><div class="grow"><b>Spin the date wheel</b><div class="small muted">Spin your matches, the jar, or your own list. If you're both looking, you watch it spin together.</div></div><span class="chev">›</span></a>
+      <a class="card wheel-cta" href="#/swipe"><span class="e">💞</span><div class="grow"><b>Swipe & match</b><div class="small muted">Swipe on dates, food, movies and trips. Only what you both like shows up.</div></div><span class="chev">›</span></a>`;
   } else if (datesTab === 'jar') {
     const jar = store.all('jar').reverse();
     body = `<div class="card"><p class="small muted">Drop in date ideas whenever you think of them. They show up in the spinner.</p>
@@ -314,7 +317,7 @@ function spin(btn) {
   tick();
 }
 
-function planSheet(title = '') {
+export function planSheet(title = "") {
   sheet({
     title: 'Plan a date',
     body: `<label class="field">What are you doing?</label><input type="text" data-t maxlength="80" value="${esc(title || '')}" placeholder="Dinner at…">

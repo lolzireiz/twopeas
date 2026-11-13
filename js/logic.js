@@ -1,5 +1,6 @@
 // Derived state: points, wallet, pet mood, streaks, daily question, weekly challenge.
 import { store } from './store.js';
+import { bothCrushedIt, progress as habitProgress } from './habits-logic.js';
 import { QUESTIONS, CHALLENGES, SHOP } from './content.js';
 import { dayKey, addDays, weekKey, hash, seededShuffle, daysBetween, parseDay } from './util.js';
 
@@ -63,7 +64,7 @@ export function petState() {
   const feeds24 = store.all('feed', (f) => f.at > dayAgo).length;
   let acts24 = 0;
   for (const it of store.items.values()) {
-    if (it.at > dayAgo && ['tap', 'note', 'pet', 'mood', 'game', 'stroke', 'dqa', 'letter', 'memory', 'appr', 'feed'].includes(it.kind)) acts24++;
+    if (it.at > dayAgo && ['tap', 'note', 'pet', 'mood', 'game', 'stroke', 'dqa', 'letter', 'memory', 'appr', 'feed', 'hbday', 'peadle', 'cheer', 'swdone', 'snap'].includes(it.kind)) acts24++;
   }
   let full = Math.min(1, feeds24 / 5);
   let love = Math.min(1, acts24 / 10);
@@ -71,11 +72,14 @@ export function petState() {
   if (hrs > 72) mood = 'sad';
   else if (hrs > 24) mood = 'sleepy';
   else if (full >= 0.8 && love >= 0.6) mood = 'love';
+  const strong = hrs <= 24 && bothCrushedIt();
+  if (strong) { mood = 'love'; love = Math.max(love, 0.9); }
+  else if (hrs <= 24 && (habitProgress(store.me).all || habitProgress(store.partnerId).all)) love = Math.min(1, love + 0.2);
   if (hrs > 24) { full = Math.min(full, 0.15); love = Math.min(love, 0.15); }
   const h = new Date().getHours();
   const night = h >= 22 || h < 7;
   const asleep = night && mood !== 'sad';
-  return { mood, face: asleep ? 'sleepy' : mood, full, love, hrs, night, asleep };
+  return { mood, face: asleep ? 'sleepy' : mood, full, love, hrs, night, asleep, strong };
 }
 
 export function petMoodText(name, mood, asleep) {

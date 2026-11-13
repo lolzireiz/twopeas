@@ -6,10 +6,20 @@ export const CONFIG = {
   VAPID_PUBLIC_KEY: 'BGBDmmWpcwW-HQIahVOtkNfulGaJpOdCkZXJy_0IYAlZEaJm-J3JX_Dgf-gjiT7Agys6g8bLhbtJFVBmGoYpq-c',
 };
 
-export const APP_VERSION = '1.3.7';
-export const APP_BUILD = '20261112233706';
+export const APP_VERSION = '1.4.0';
+export const APP_BUILD = '20261113034334';
 
 export const WHATS_NEW = [
+  { v: '1.4.0', date: '2026-11-12', notes: [
+    'Dark mode, 10 themes, background patterns, fonts and text sizes (Settings, Look & feel)',
+    'Peadle: the same 5-letter word for both of you every day, with head-to-head stats',
+    'Swipe & match: 7 decks (dates, food, places, movies, shows, things to do, trips) plus your own cards',
+    'Food preferences: allergies, diet and spice, so food picks stay safe for both of you, plus an allergy card for servers',
+    'A cheat sheet with your favorites, so your person always knows your order',
+    'A real date wheel you can spin together',
+    'Shared habits that make your pet happy',
+    'Wrapped: weekly, monthly, and a big yearly one on New Year\'s Eve',
+  ] },
   { v: '1.3.7', date: '2026-11-12', notes: ['Scoreboard fixed: Would you rather now counts as a win for whoever guessed the other better (your past games count too)', 'Draw & Guess counts as team wins'] },
   { v: '1.3.6', date: '2026-11-12', notes: ['Draw & Guess: category hint, letter blanks, a letter revealed after each wrong guess, 🔥 when you are close, 5 guesses, and the artist can add a clue', 'Taps can no longer be spammed (same tap once every 3 minutes)'] },
   { v: '1.3.5', date: '2026-11-12', notes: ["Daily snap has its own camera: your selfie comes out exactly like the preview, no more flipping"] },

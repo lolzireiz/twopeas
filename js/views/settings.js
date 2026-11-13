@@ -42,6 +42,9 @@ export function view() {
         ${store.mode === 'live' && store.email ? `<p class="small muted" style="margin-top:12px">Signed in as ${esc(store.email)}</p>` : ''}
       </div>
 
+      <a class="card set-link" href="#/look"><span class="e">🎨</span><div class="grow"><b>Look & feel</b><div class="small muted">Dark mode, themes, fonts, backgrounds</div></div><span class="chev">›</span></a>
+      <a class="card set-link" href="#/prefs"><span class="e">🥜</span><div class="grow"><b>Food & preferences</b><div class="small muted">Allergies, diet and your cheat sheet</div></div><span class="chev">›</span></a>
+
       <div class="card">
         <h2>Us</h2>
         <div class="row between"><span class="bold">Your person</span><span class="muted bold">${themName()}</span></div>

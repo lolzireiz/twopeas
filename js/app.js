@@ -1,3 +1,4 @@
+import './theme.js';
 import { store } from './store.js';
 import { APP_VERSION, WHATS_NEW } from './config.js';
 import { toast, sheet, lsGet, lsSet, esc, dayKey } from './util.js';
@@ -18,6 +19,13 @@ import * as petView from './views/petview.js';
 import * as settings from './views/settings.js';
 import * as extras from './views/extras.js';
 import * as snapView from './views/snap.js';
+import * as look from './views/look.js';
+import * as peadle from './views/peadle.js';
+import * as swipe from './views/swipe.js';
+import * as prefs from './views/prefs.js';
+import * as wheel from './views/wheel.js';
+import * as habits from './views/habits.js';
+import * as wrapped from './views/wrapped.js';
 import { STICKERS, earned } from './stickers.js';
 import { confetti } from './util.js';
 
@@ -44,6 +52,17 @@ const ROUTES = [
   ['board/:id', notes.board, 'notes'],
   ['pet', petView.view, 'pet'],
   ['settings', settings.view, 'home'],
+  ['look', look.view, 'home'],
+  ['peadle', peadle.view, 'play'],
+  ['swipe', swipe.hub, 'us'],
+  ['swipe/:deck', swipe.deck, 'us'],
+  ['matches', swipe.matches, 'us'],
+  ['prefs', prefs.view, 'us'],
+  ['allergy-card', prefs.allergyCard, 'us'],
+  ['wheel', wheel.view, 'us'],
+  ['habits', habits.view, 'us'],
+  ['wrapped', wrapped.hub, 'us'],
+  ['wrapped/:p/:k', wrapped.story, 'us'],
 ];
 
 const TABS = [
@@ -128,6 +147,7 @@ function restoreInputs({ vals, focus }) {
 }
 
 export function render() {
+  look.syncLookFromProfile();
   applyColors();
   const route = parse();
   const samePage = route.path === lastPath;
@@ -236,6 +256,7 @@ $app.addEventListener('submit', async (e) => {
 });
 
 window.addEventListener('hashchange', () => render());
+window.addEventListener('twopeas-look', () => render());
 
 // Live updates from your partner.
 store.on((change) => {
@@ -272,6 +293,8 @@ function announce(it) {
     snap: `📷 ${who} sent today's snap`,
     visit: d.to === store.me ? `🐾 ${esc(store.couple.pet?.name || 'Your pet')} came to visit from ${who}` : null,
     board: `🎨 ${who} started a drawing`,
+    habit: d.owner === 'both' ? `💪 ${who} started a habit for you both` : null,
+    cheer: d.to === store.me ? `👏 ${who} is cheering you on` : null,
   }[it.kind];
   if (msg) toast(msg);
 }

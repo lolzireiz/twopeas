@@ -1,4 +1,5 @@
 import { store } from '../store.js';
+import { peadleStatus } from './peadle.js';
 import { WYR, WYR_CAT, WYR_CATS, DRAW_PROMPTS, WORDS, drawKind } from '../content.js';
 import { GAME_NAMES, GAME_EMOJI, turnOf, scoreboard, award, wyrPicks, wyrGuesses, gameWinner } from '../logic.js';
 import { hunt, newBoard } from './hunt.js';
@@ -55,6 +56,7 @@ export function list() {
         <div class="score-sub">${sb.team ? `🤝 ${sb.team} drawing${sb.team === 1 ? '' : 's'} guessed together` : '🤝 Draw & Guess counts as team wins'}${sb.draws ? ` · ${sb.draws} tie${sb.draws === 1 ? '' : 's'}` : ''} · ${sb.played} played</div>
       </div>
       <div class="section-title">New game</div>
+      <a class="card pdl-card" href="#/peadle"><span class="e">🟩</span><div class="grow"><b>Peadle · daily word</b><div class="small muted">${(() => { const p = peadleStatus(); return p.mineDone ? 'Solved today. Come back tomorrow!' : p.theirsDone ? `${themName()} already played. Beat them!` : 'Same 5-letter word for both of you'; })()}</div></div><span class="chev">›</span></a>
       <div class="new-games">${['hunt', 'wyr', 'draw', 'word', 'ttt', 'c4', 'dots'].map((t) => `<button class="new-game ${t === 'hunt' ? 'feature' : ''}" data-act="newGame" data-t="${t}"><span class="e">${GAME_EMOJI[t]}</span>${GAME_NAMES[t]}</button>`).join('')}</div>
       ${mine.length ? `<div class="section-title">Your turn</div><div class="card">${mine.map(row).join('')}</div>` : ''}
       ${theirs.length ? `<div class="section-title">Their turn</div><div class="card">${theirs.map(row).join('')}</div>` : ''}

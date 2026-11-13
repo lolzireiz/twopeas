@@ -53,7 +53,7 @@ export function view() {
       <div class="card pet-card">
         <div class="room-wrap pet-bob" data-act="petPet">${roomWithPet(c.room, { species: pet.species, mood: store.presence.online && !st.asleep ? 'love' : st.face, stage, outfit: c.outfit || {} }, st.night)}<div class="bubble" id="petBubble"></div></div>
         <div class="pet-info">
-          <div class="small bold muted">${petMoodText(esc(pet.name), st.mood, st.asleep)}</div>
+          <div class="small bold muted">${(st.strong && !st.asleep ? `${esc(pet.name)} is flexing. You both finished your habits 💪` : petMoodText(esc(pet.name), st.mood, st.asleep))}</div>
           <div class="row between" style="margin-top:8px"><b>Level ${t.level}</b><span class="small muted bold">${t.earned.toLocaleString()} / ${t.nextLvl.toLocaleString()} XP</span></div>
           <div class="level-bar"><i style="width:${Math.round(t.progress * 100)}%"></i></div>
           ${nextStage ? `<div class="small muted" style="margin-top:6px">Grows into a ${STAGE_NAMES[stageOf(nextStage)].toLowerCase()} at level ${nextStage}</div>` : '<div class="small muted" style="margin-top:6px">All grown up 🥹</div>'}

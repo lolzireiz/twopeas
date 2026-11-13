@@ -13,6 +13,10 @@ import { CONFIG } from '../config.js';
 import { enablePush } from '../push.js';
 import { feedRow, feedPet, petTap, afterFeed, playToy, sendVisit, openVisit } from '../feed.js';
 import { snacks } from '../logic.js';
+import { peadleStatus } from './peadle.js';
+import { progress as habitProgress, habitsOf } from '../habits-logic.js';
+import { newMatchCount } from './swipe.js';
+import { freshWrapped } from './wrapped.js';
 
 function greeting() {
   const h = new Date().getHours();
@@ -61,7 +65,7 @@ function petCard() {
     </div>
     <div class="pet-info">
       <div class="row between">
-        <div><h2 style="margin:0">${esc(pet.name)}</h2><div class="small muted bold">${petMoodText(esc(pet.name), st.mood, st.asleep)}</div></div>
+        <div><h2 style="margin:0">${esc(pet.name)}</h2><div class="small muted bold">${(st.strong && !st.asleep ? `${esc(pet.name)} is flexing. You both finished your habits 💪` : petMoodText(esc(pet.name), st.mood, st.asleep))}</div></div>
         <span class="pill gold">Lv ${t.level} · ${STAGE_NAMES[stage]}</span>
       </div>
       <div class="level-bar"><i style="width:${Math.round(t.progress * 100)}%"></i></div>
@@ -182,6 +186,14 @@ function todayCard() {
     const yrs = Number(t.slice(0, 4)) - Number(m.data.date.slice(0, 4));
     rows.push({ p: 4, h: `<a class="todo" href="#/memories"><div class="ic">📸</div><div class="tx"><b>On this day, ${yrs} year${yrs > 1 ? 's' : ''} ago</b><span>${esc(m.data.caption || 'A memory')}</span></div><span class="chev">›</span></a>` });
   }
+  const pd = peadleStatus();
+  rows.push({ p: pd.mineDone ? 11 : pd.theirsDone ? 2 : 4, h: `<a class="todo" href="#/peadle"><div class="ic">🟩</div><div class="tx"><b>Peadle</b><span>${pd.mineDone ? 'Solved! Compare your grids' : pd.theirsDone ? `${themName()} ${pd.theirWon ? `solved it in ${pd.theirN}` : 'got stumped'}. Your turn!` : "Today's word is waiting"}</span></div>${!pd.mineDone ? '<span class="dot"></span>' : ''}<span class="chev">›</span></a>` });
+  if (habitsOf(store.me).length) {
+    const hp = habitProgress(store.me);
+    if (hp.due) rows.push({ p: hp.all ? 12 : 5, h: `<a class="todo" href="#/habits"><div class="ic">💪</div><div class="tx"><b>Habits</b><span>${hp.all ? 'All done today 🎉' : `${hp.done} of ${hp.due} done`}</span></div><span class="chev">›</span></a>` });
+  }
+  const nm = newMatchCount();
+  if (nm) rows.push({ p: 1, h: `<a class="todo" href="#/matches"><div class="ic">💞</div><div class="tx"><b>${nm} new match${nm > 1 ? 'es' : ''}!</b><span>You both said yes</span></div><span class="dot"></span><span class="chev">›</span></a>` });
   rows.sort((a, b) => a.p - b.p);
   const shown = todayOpen ? rows : rows.slice(0, 3);
   const streak = Math.max(dqStreak(), checkinStreak());
@@ -221,11 +233,20 @@ function visitCard() {
   </div>`;
 }
 
+function wrappedBanner() {
+  let w = null;
+  try { w = freshWrapped(); } catch (e) { console.warn(e); }
+  if (!w) return '';
+  const t = { week: 'Your weekly Wrapped is here', month: `Your ${w.label.split(' ')[0]} Wrapped is here`, year: `${w.key} WRAPPED IS HERE 🎆` }[w.period];
+  return `<a class="card wr-banner" href="#/wrapped/${w.period}/${w.key}"><span class="e">🎁</span><div class="grow"><b>${t}</b><div class="small" style="opacity:.9">Tap to watch it together</div></div><span class="chev" style="color:#fff">›</span></a>`;
+}
+
 export function home() {
   ensureDailyQuestion().catch(() => {});
   return {
     html: `${header(`<span class="row gap">${logoSVG(34)}Two Peas</span>`, { sub: `${greeting()}, ${meName()} ${presencePill()}`, right: '<a class="icon-btn" href="#/settings" aria-label="Settings">⚙️</a>' })}
       ${waitingCard()}
+      ${wrappedBanner()}
       ${visitCard()}
       ${gotTap()}
       ${petCard()}
