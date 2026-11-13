@@ -20,6 +20,7 @@
   --pattern: none;
   --zoom: 1;
   --font: ui-rounded, 'SF Pro Rounded', 'Nunito', system-ui, -apple-system, sans-serif;
+  --bar: #3d3833;
   --faint: #cbbfb2;
   --key: #ffffff;
   --key-edge: #e5dccf;
@@ -397,7 +398,7 @@ label.field { display: block; font-weight: 800; font-size: 14px; margin: 14px 0 
 .jar-art { font-size: 84px; text-align: center; line-height: 1; }
 .week-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .guess-tag { font-size: 12px; font-weight: 800; color: var(--muted); }
-.upd-bar { position: fixed; left: 12px; right: 12px; bottom: calc(var(--tabbar) + var(--safe-bottom) + 12px); z-index: 80; max-width: 536px; margin: 0 auto; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 20px; background: var(--ink); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.25); transform: translateY(30px); opacity: 0; transition: .3s; }
+.upd-bar { position: fixed; left: 12px; right: 12px; bottom: calc(var(--tabbar) + var(--safe-bottom) + 12px); z-index: 80; max-width: 536px; margin: 0 auto; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 20px; background: var(--bar); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.25); transform: translateY(30px); opacity: 0; transition: .3s; }
 .upd-bar.in { transform: none; opacity: 1; }
 .upd-go { flex: 1; text-align: left; padding: 10px 12px; font-weight: 700; font-size: 15px; color: #fff; }
 .upd-x { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.15); color: #fff; font-size: 16px; }
@@ -467,7 +468,7 @@ label.field { display: block; font-weight: 800; font-size: 14px; margin: 14px 0 
 .c-btn.mic { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .c-btn.mic.recording { background: #e8576a; transform: scale(1.15); }
 .reply-bar { display: flex; align-items: center; gap: 8px; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
-.rec { position: fixed; left: 12px; right: 12px; bottom: calc(var(--tabbar) + var(--safe-bottom) + 70px); z-index: 30; max-width: 536px; margin: 0 auto; display: flex; align-items: center; gap: 10px; background: var(--ink); color: #fff; border-radius: 20px; padding: 10px 12px; font-size: 14px; }
+.rec { position: fixed; left: 12px; right: 12px; bottom: calc(var(--tabbar) + var(--safe-bottom) + 70px); z-index: 30; max-width: 536px; margin: 0 auto; display: flex; align-items: center; gap: 10px; background: var(--bar); color: #fff; border-radius: 20px; padding: 10px 12px; font-size: 14px; }
 .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #e8576a; animation: pulse 1s infinite; }
 .react-row { display: flex; justify-content: space-between; background: var(--card); border-radius: 999px; padding: 6px; box-shadow: var(--shadow); }
 .react-row button { font-size: 28px; width: 46px; height: 46px; border-radius: 50%; }
@@ -523,6 +524,7 @@ label.field { display: block; font-weight: 800; font-size: 14px; margin: 14px 0 
 
 /* ---------- Dark mode ---------- */
 html[data-mode="dark"] {
+  --bar: color-mix(in srgb, var(--pea) 50%, #0b0b0b);
   --faint: #5a524b; --key: #3a352f; --key-edge: #1a1715; --paper: var(--soft);
   --ok-soft: #233a20; --ok-ink: #9ad88a;
   --warn-soft: #3b3218; --warn-ink: #f0cf6a;
@@ -753,3 +755,5 @@ body.wr-open { overflow: hidden; }
 .sw-match-btn.bump { animation: mbump .6s; }
 @keyframes mbump { 30% { transform: scale(1.35) rotate(-8deg); } 60% { transform: scale(.95); } }
 .sw-card[style*="--n:2"] { animation: swin .35s both; } @keyframes swin { from { opacity: 0; } }
+
+html[data-mode="dark"] .upd-bar, html[data-mode="dark"] .rec { box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.5); }
