@@ -752,3 +752,4 @@ body.wr-open { overflow: hidden; }
 .sw-mcount { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #ee6f8f; color: #fff; font-size: 11px; font-weight: 900; display: grid; place-items: center; }
 .sw-match-btn.bump { animation: mbump .6s; }
 @keyframes mbump { 30% { transform: scale(1.35) rotate(-8deg); } 60% { transform: scale(.95); } }
+.sw-card[style*="--n:2"] { animation: swin .35s both; } @keyframes swin { from { opacity: 0; } }

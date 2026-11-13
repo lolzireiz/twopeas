@@ -51,15 +51,17 @@ const hideUnsafe = () => lsGet('twopeas-hide-unsafe', true);
 // Your deck, in your own order.
 function queue(deck, filter) {
   const mine = swipesOf(deck, store.me);
-  let cards = cardsOf(deck).filter((c) => mine.v[c.key] == null);
+  // Shuffle the WHOLE deck the same way every time, then drop what you've swiped.
+  // (Shuffling only what's left would reorder the deck after every swipe.)
+  let cards = seededShuffle(cardsOf(deck), `${store.me}-${deck}`)
+    .sort((a, b) => loveScore(b.food) - loveScore(a.food))
+    .filter((c) => mine.v[c.key] == null);
   if (filter && filter !== 'all') {
     cards = filter === 'safe' ? cards.filter((c) => !c.food || ['ok', 'note'].includes(checkBoth(c.food).level))
       : cards.filter((c) => c.tags?.includes(filter));
   }
   if (DECKS[deck].food && hideUnsafe()) cards = cards.filter((c) => !c.food || checkBoth(c.food).level !== 'avoid');
-  // A plain shuffle. Nothing about what your person picked changes your order.
-  const order = seededShuffle(cards, `${store.me}-${deck}`);
-  return order.sort((a, b) => loveScore(b.food) - loveScore(a.food));
+  return cards;
 }
 
 export function deckProgress(deck) {
@@ -216,6 +218,7 @@ export function deck({ deck: id }) {
     el.style.transition = 'transform .3s ease-in, opacity .3s';
     el.style.transform = `translate(${outX}px, ${outY}px) rotate(${outX / 20}deg)`;
     el.style.opacity = '0';
+    document.querySelectorAll('.sw-card:not(.top)').forEach((c) => { c.style.setProperty('--n', String(Number(c.style.getPropertyValue('--n')) - 1)); });
     const s = el.querySelector(`.sw-stamp.${val === 1 ? 'like' : val === 0 ? 'nope' : 'super'}`);
     if (s) s.style.opacity = 1;
     setTimeout(async () => {
